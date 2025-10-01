@@ -8,8 +8,10 @@
 
 \input{include.tex}
 \input{\pathcommon{standard_theorems}}
+\input{\pathcommon{derivatives}}
 
 \newcommand{\realfunction}[2] {{#1: #2 \rightarrow \mathbb{R}}}
+\newcommand{\uexp}[1] {{\text{uexp}_{#1}}}
 
 \title{Fitting absolutely monotonic functions}
 \author{Juan Casanova}
@@ -28,19 +30,20 @@ This paper has two purposes. First, to present a method for fitting absolutely m
 
 \subsection{Absolutely monotonic functions}
 
-A smooth function $\realfunction{f}{[a,b)}$ (where $b$ can be $+\infty$) is {\emph{absolutely monotonic}} if all of its derivatives are non-negative at every point in the interval. A simple example of an absolutely monotonic function is the exponential $e^x$, and in fact in a very significant sense, it can be shown that all absolutely monotonic functions are essentially sums of exponentials, a key idea supporting this work. More accurately, in his classic work \cite{1929_bernstein_absolutely_monotonic}, among other things, Bernstein characterized all absolutely monotonic functions as weighted averages of exponential functions with positive exponents.
+A smooth function $\realfunction{f}{[a,b]}$ (where $b$ can be $+\infty$) is {\emph{absolutely monotonic}} if all of its derivatives are non-negative at every point in the interval. A simple example of an absolutely monotonic function is the exponential $e^x$, and in fact in a very significant sense, it can be shown that all absolutely monotonic functions are essentially sums of exponentials, a key idea supporting this work. More accurately, in his classic work \cite{1929_bernstein_absolutely_monotonic}, among other things, Bernstein characterized all absolutely monotonic functions as weighted averages of exponential functions with positive exponents.
 
 \begin{theorem}[\cite{1929_bernstein_absolutely_monotonic}]
-Let $\realfunction{f}{[a,b)}$ be an absolutely monotonic function. Then, there is a non-negative finite Borel measure $\mu$ such that
+\label{bernstein_theorem}
+Let $\realfunction{f}{[a,b]}$ (where $a$ and $b$ are both finite) be an absolutely monotonic function. Then, there is a non-negative finite Borel measure $\mu$ such that
 
 \begin{equation}
 f(x) = \int_{0}^{\infty} e^{tx} d \mu(t)
 \end{equation}
 
-\noindent for every $x \in [a,b)$.
+\noindent for every $x \in [a,b]$.
 \end{theorem}
 
-There is a direct connection between absolutely monotonic functions and {\emph{completely monotonic functions}}, which are smooth functions with alternating sign derivatives. Specifically, a function $f(x)$ is absolutely monotonic in $[a,b)$ if and only if the function $f(-x)$ is completely monotonic in $(-b,-a]$. For example, $e^{-x}$ is a completely monotonic function, and similarly, Bernstein's theorem, when applied to completely monotonic functions, characterizes them as weighted averages of exponential functions with negative exponents.
+There is a direct connection between absolutely monotonic functions and {\emph{completely monotonic functions}}, which are smooth functions with alternating sign derivatives. Specifically, a function $f(x)$ is absolutely monotonic in $[a,b]$ if and only if the function $f(-x)$ is completely monotonic in $[-b,-a]$. For example, $e^{-x}$ is a completely monotonic function, and similarly, Bernstein's theorem, when applied to completely monotonic functions, characterizes them as weighted averages of exponential functions with negative exponents (the Laplace transform of the non-negative measure $\mu$).
 
 In informal terms, one can describe the function $e^x$ to be absolutely monotonic {\emph{towards the right}} and completely monotonic {\emph{towards the left}}, and the absolutely monotonic or completely monotonic views of functions are more related with what side of the function we are focusing on, and the corresponding properties that they have on them.\\
 
@@ -54,11 +57,21 @@ Absolutely monotonic functions form a {\emph{convex cone}}. In particular, weigh
 If $f, g$ are absolutely monotonic functions and $\alpha, \beta \in [0,+\infty)$, then $\alpha f + \beta g$ is an absolutely monotonic function.
 \end{lemma}
 
-The proof is trivial by looking at the definition of absolute monotonicity in terms of non-negative derivatives and linearity of derivation.\\
+The proof is trivial by looking at the definition of absolute monotonicity in terms of non-negative derivatives and linearity of derivation.
+
+This can naturally be extended to infinite sums of functions (of which the Bernstein theorem presents a particular case) over non-negative measures, but we will not use this result in this work so we skip the proof of this slightly more general result. Other than Bernstein's theorem, we will limit ourselves to finite sums of absolutely monotonic functions.\\
 
 We do not concern ourselves too much with further theoretical properties of absolutely monotonic or completely monotonic functions in this work, but for the interested reader, \cite{2014_koumandos_completely_monotonic} offers a modern summary of theoretical results and additional related families of functions, such as logarithmically completely monotonic functions, Bernstein functions, and Stieltjes functions.\\
 
-\cite{2011_rajba_integral_representation_convex_functions} is a particularly interesting piece of work partially bridging the gap between methods focused on convexity and absolute monotonicity. It presents an integral representation of {\emph{$n$-convex}} functions, which are functions where a certain number of derivatives are positive. In other words, an absolutely monotonic function is a function that is $n$-convex for every $n$. The mathematics in this work and the representation it offers for $n$-convex functions are strongly reminiscent of the Bernstein theorem. In particular, there is a direct relationship between the terms in this work and the Taylor series of the exponential function, indicating that this integral representation is using ``limited exponential functions'' consisting of partial Taylor series of exponential functions, up to the derivative that is required. It is surprising, then, that the work does not mention the Bernstein theorem or the words ``absolutely monotonic'' or ``completely monotonic'' whatsoever, or cite any work in this subject.
+\cite{2011_rajba_integral_representation_convex_functions} is a particularly interesting piece of work partially bridging the gap between methods focused on convexity and absolute monotonicity. It presents an integral representation of {\emph{$n$-convex}} functions, which are functions where a certain number of derivatives are positive. In other words, an absolutely monotonic function is a function that is $n$-convex for every $n$. The mathematics in this work and the representation it offers for $n$-convex functions are strongly reminiscent of the Bernstein theorem. In particular, there is a direct relationship between the terms in this work and the Taylor series of the exponential function, indicating that this integral representation is using ``limited exponential functions'' consisting of partial Taylor series of exponential functions, up to the derivative that is required. It is surprising, then, that the work does not mention the Bernstein theorem or the words ``absolutely monotonic'' or ``completely monotonic'' whatsoever, or cite any work in this subject. More precisely, theorem 2.1 in \cite{2011_rajba_integral_representation_convex_functions} states that any n-convex function $f$ with regular derivatives in $(a,b)$ is such that:
+
+\begin{equation}
+f(x) = \int_{(a,\epsilon]} (-1)^{n+1} {{[-(x-u)]^n_{+}} \over {n!}} dg_{(n)-}(u) + \int_{[\epsilon,b)} {{(x-u)^n_{+}} \over {n!}} dg_{(n)+}(u) + Q(x)
+\end{equation}
+
+\noindent (with certain constraints on the terms in this equation).
+
+Informally, one can draw a clear connection between this and absolutely monotonic and completely monotonic functions when we notice that ${{(x-u)^n_{+}} \over {n!}}$ is the truncated Taylor series for $e^x$ up to $n$, and therefore this equation is essentially separating the n-convex function $f$ into a completely monotonic part (to degree $n$), an absolutely monotonic part (to degree $n$), and a remainder term $Q(x)$ with lesser degree.
 
 While we do not use them in this paper, this work can be relevant in extending some of the notions here to less constrained cases like $n$-convex functions, or to better understand the methods and their limitations.\\
 
@@ -107,6 +120,209 @@ In the remainder of this paper we discuss our proposed, simple method for fittin
 
 \section{Method}
 \label{method}
+
+In this section we describe the method that we use to solve the following problem:
+
+\begin{problem}
+Given a set of data points $\mathcal{D} = \{(x_i,y_i)\}$, we wish to fit an absolutely monotonic function $f$ to minimize the error between the $\{y_i\}$ and $\{f(x_i)\}$.
+\end{problem}
+
+Note that we do not prescribe the measure of error in the general definition of the problem, as that can be arbitary. We also are not looking at the strict definition of {\emph{minimize}} but rather a best effort approach to it. In general, this is the larger problem we are trying to address.
+
+However, in this work we use a semi-parametric least squares optimization, which means that we are minimizing the mean squared error, and we use an iterative method to find a best effort solution within a prescribed family of functions. Further details are described in the remainder of this section. This is a consequence of our chosen method.
+
+\subsection{Domain}
+
+Since the data $\mathcal{D}$ is finite, there will be bounds on the $\{x_i\}$ and $\{y_i\}$: 
+\begin{equation}
+\begin{array}{l}
+a = \min x_i\\
+b = \max x_i\\
+s = \min y_i\\
+t = \max y_i\\
+\end{array}
+\end{equation}
+
+Therefore, we can safely constrain ourselves to absolutely monotonic functions $f: [a,b] \rightarrow [s, t]$. Moreover, we can reduce the problem to absolutely monotonic functions $\bar{f}: [0,1] \rightarrow [0,1]$ through a simple affine transformation. By transforming $\mathcal{D} = \{(x_i,y_i)\}$ into $\bar{\mathcal{D}} = \{(\bar{x_i},\bar{y_i})\} = \{({{x_i - a} \over {b - a}},{{y_i - s} \over {t - s}})\}$, if we have a solution $\bar{f}: [0,1] \rightarrow [0,1]$ for the problem associated to $\bar{\mathcal{D}}$, we can define
+
+\begin{equation}
+f(x) = s + \bar{f}({{x - a} \over {b - a}}) (t - s)
+\end{equation}
+
+\noindent and we have:
+
+\begin{equation}
+\begin{array}{l}
+f(a) = s + \bar{f}({{a-a} \over {b-a}}) (t - s) = s + \bar{f}(0) (t - s) = s + 0 \cdot (t -s) = s\\ 
+f(b) = s + \bar{f}({{b-a} \over {b-a}}) (t - s) = s + \bar{f}(1) (t-s) = s + 1 \cdot (t-s) = t\\
+\end{array}
+\end{equation}
+
+\noindent (correspondence of bounds)
+
+\begin{equation}
+{{f(x_i) - y_i } \over {t-s}} = {{s + \bar{f}({{x_i - a} \over {b-a}}) (t - s) - y_i} \over {t-s}} = \bar{f}({{x_i - a} \over {b-a}}) - {{y_i - s} \over {t-s}} = {{\bar{f}(\bar{x_i}) - \bar{y_i}} \over {1 - 0}}\\
+\end{equation}
+
+\noindent (correspondence of data points)
+
+\begin{equation}
+\nderiv{f}{n}(x) = {({{1} \over {b - a}})}^n {\nderiv{\bar{f}}{n}} ({{x -a} \over {b-a}}) (t-s)\\
+\end{equation}
+
+\noindent ($f$ is absolutely monotonic if and only if $\bar{f}$ is absolutely monotonic, since $b \geq a$ and $t \geq s$).\\
+
+Therefore, for the remainder of this work, we only consider the problem of fitting absolutely monotonic functions $f: [0,1] \rightarrow [0,1]$ with all data points such that $x_i, y_i \in [0,1]$.
+
+\subsection{Unit exponentials}
+
+One of the key novel insights of this work is the definition of what we call {\emph{unit exponentials}}. Unit exponentials are rescalings of exponential functions with positive exponents designed to have more regular numerical behaviours that make them both easier to understand in the context of absolutely monotonic fitting, and improve the computational properties of the fitting algorithm.\\
+
+\begin{definition}[Unit exponentials]
+We define the parametric {\emph{unit exponentials}} family of absolutely monotonic functions, with parameter $t > 0$:
+\begin{equation}
+\uexp{t}(x) = {{e^{tx} - 1} \over {e^t - 1}}
+\end{equation}
+\end{definition}
+
+(INCLUDE GRAPH WITH SOME UNIT EXPONENTIALS HERE)
+
+The most immediate advantage of unit exponentials is that they are all pinned to the $[0,1]$ interval:
+
+\begin{equation}
+\begin{array}{l}
+\uexp{t}(0) = {{e^0 -1} \over {e^t - 1}} = 0\\
+\uexp{t}(1) = {{e^t -1} \over {e^t - 1}} = 1\\
+\end{array}
+\end{equation}
+
+This makes them extremely convenient for the problem of fitting absolutely monotonic functions $f:[0,1] \rightarrow [0,1]$. We note that $\lim\limits_{t \to 0} \uexp{t}(x) = x$, and so we can smoothly extend the definition to $\uexp{0}(x) = x$\\
+
+However, their attractiveness only begins here. One of the most interesting properties of unit expontentials is that their value for any $x \in [0,1]$ always corresponds to the proportion of the total growth between $0$ and $1$ that {\emph{all}} of its derivatives have manifested between $0$ and $x$:
+
+\begin{theorem}
+For every $t > 0$, every $n \geq 0$, and every $x \in [0,1]$.
+\begin{equation}
+{{\nderiv{\uexp{t}}{n}(x) - \nderiv{\uexp{t}}{n}(0)} \over {\nderiv{\uexp{t}}{n}(1) - \nderiv{\uexp{t}}{n}(0)}} = \uexp{t}(x)
+\end{equation}
+\end{theorem}
+
+While unit exponentials always go between 0 and 1, their derivatives do not necessarily do so. They are always greater than $0$ at $0$ and grow to very high values near $1$, with no bound for unbounded $t$. However, the theorem establishes a link between the function itself and how fast {\bf{all}} of the derivatives grow, displaying a very significant and regular coordination among all derivatives for unit exponentials.\\
+
+There are two useful lemmas that we will use to prove this theorem among other things.
+
+\begin{lemma}
+For every $t > 0$ and $n > 0$,
+\begin{equation}
+\nderiv{\uexp{t}}{n}(x) = {{t^n e^{tx}} \over {e^t - 1}}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+This is a simple inductive application of the derivation of $\uexp{t}(x) = {{e^{tx} - 1} \over {e^t - 1}}$.
+\end{proof}
+
+\begin{lemma}
+For every $t > 0$ and $n > 0$,
+\begin{equation}
+\begin{array}{l}
+\nderiv{\uexp{t}}{n}(0) = {{t^n} \over {e^t - 1}}\\
+\nderiv{\uexp{t}}{n}(1) = {{t^n e^t} \over {e^t - 1}}\\
+\nderiv{\uexp{t}}{n}(1) - \nderiv{\uexp{t}}{n}(0) = t^n\\
+\end{array}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+The first two lines are a direct application of the previous lemma, but we will write the derivation of the last line explicitly, as it is the most interesting part of this lemma, providing a direct expression for the range of the $n$-th derivative of $\uexp{t}$ depending cleanly on $t$.
+
+\begin{equation}
+\nderiv{\uexp{t}}{n}(1) - \nderiv{\uexp{t}}{n}(0) =  {{t^n e^t} \over {e^t - 1}} - {{t^n} \over {e^t - 1}} = {{t^n (e^t - 1)} \over {e^t -1}} = t^n
+\end{equation}
+\end{proof}
+
+Note that his last line also holds for $n = 0$, that is, it is also the case that $\uexp{t}(1) - \uexp{t}(0) = t^0 = 1$.
+
+We are now in a position to prove the theorem.
+
+\begin{proof}[(Proof of the theorem)]
+We first note that for $n = 0$ the theorem is trivial since $\uexp{t}(0) = 0$ and $\uexp{t}(1) - \uexp{t}(0) = 1$, so it follows directly from the equation.
+
+\begin{equation}
+{{\uexp{t}(x) - \uexp{t}(0)} \over {\uexp{t}(1) - \uexp{t}(0)}} = {{\uexp{t}(x) - 0} \over {1}} = \uexp{t}(x)
+\end{equation}
+
+For $n > 0$, we begin by simplifying the denominator to $t^n$ as per the lemma,
+
+\begin{equation}
+{{\nderiv{\uexp{t}}{n}(x) - \nderiv{\uexp{t}}{n}(0)} \over {\nderiv{\uexp{t}}{n}(1) - \nderiv{\uexp{t}}{n}(0)}} = {{\nderiv{\uexp{t}}{n}(x) - \nderiv{\uexp{t}}{n}(0)} \over {t^n}}
+\end{equation}
+
+We can then replace the two values in the numerator,
+
+\begin{multline}
+{{\nderiv{\uexp{t}}{n}(x) - \nderiv{\uexp{t}}{n}(0)} \over {t^n}} = {{1} \over {t^n}} \cdot ({{t^n e^{tx}} \over {e^t - 1}} - {{t^n} \over {e^t - 1}}) = \\
+= {{1} \over {t^n}} \cdot {{t^n (e^{tx} - 1)} \over {e^t - 1}} = {{e^{tx} - 1} \over {e^t - 1}} = \uexp{t}(x)\\
+\end{multline}
+\end{proof}
+
+By the middle point theorem, for any $t > 0$, there will always be a point $x_1(t) \in [0,1]$ where the first derivative of $\uexp{t}$ will be exactly 1. We will call this the {\emph{kicking point}} of $\uexp{t}$. All unit exponentials go underneath the straight line $\uexp{0}(x) = x$, with lower initial first derivative and higher final first derivative the higher the $t$. At some point, the first derivative will be exactly $1$, which can be identified to be as the point in which the unit exponential ``kicks off'' and begins its exponential growth. The location of the kicking point with respect to $t$ is interesting as it approximately separates the area where the unit exponential is flat and where it is steep. This point will always be $x_1(t) \geq 0.5$ for $t > 0$, and will get progressively closer to $1$ as $t$ increases. It is, in fact, more interesting or useful to consider instead the distance between $x_1(t)$ and $1$. Write $1 - {\bar{x}}_1(t) = x_1(t)$. We can calculate this value analytically:
+
+\begin{multline}
+\uexp{t}^{\prime}(x_1(t)) = \uexp{t}^{\prime}(1 - {\bar{x}}_1(t)) = {{t e^{t (1 - {\bar{x}}_1(t))}} \over {e^t - 1}} = 1\\
+t e^{t (1 - {\bar{x}}_1(t))} = e^t - 1\\
+\ln t + t (1 - {\bar{x}}_1(t)) = \ln (e^t - 1)\\
+1 - {\bar{x}}_1(t) = {{\ln (e^t - 1) - \ln t} \over {t}}\\
+{\bar{x}}_1(t) = {{t + \ln t - \ln (e^t - 1)} \over {t}}\\
+\end{multline}
+
+(INSERT PLOT FOR THE KICKING POINT DEPENDING ON t)
+
+An interesting way to think about this gap between the kicking point and $1$ is to see how it changes when we multiply $t$ by a constant $k > 1$. Therefore, we can compare ${\bar{x}}_1(t)$ with ${\bar{x}}_1(kt)$. The latter will be smaller, as a larger $t$ moves the kicking point closer to $1$, but by how much? For large enough $t$, multiplying $t$ by $k > 1$ reduces the gap between the kicking point and $1$ to approximately $1/k$. That is, ${{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} \simeq k$. We can show this numerically by plotting ${{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}}$ for various values of $k$. This is very useful in the implementation of an iterative process to find a semiparametric fitting of an absolutely monotonic function as a sum of unit exponentials (see \S \ref{least_squares}).
+
+(INSERT PLOT FOR REDUCING THE GAP WHEN MULTIPLYING t)
+
+One last but critical element to explain how we use unit exponentials to fit absolutely monotonic functions is to show how the Bernstein theorem (theorem \ref{bernstein_theorem}) applies to them.
+
+\begin{theorem}
+Let $\realfunction{f}{[0,1]}$ be an absolutely monotonic function. Then, there is a non-negative finite Borel measure $\mu$ such that
+\begin{equation}
+f(x) - f(0) = \int_{0}^{\infty} \uexp{t}(x) d \mu(t)
+\end{equation}
+
+\noindent for every $x \in [0,1]$
+\end{theorem}
+
+\begin{proof}
+Start from Bernstein's theorem. Then there exists a non-negative finite Borel measure $\mu$ such that $f(x) = \int_{0}^{\infty} e^{tx} d \mu(t)$. But then,
+
+\begin{multline}
+f(x) = \int_{0}^{\infty} e^{tx} d \mu(t) = \int_{0}^{\infty} (e^{tx} - 1 + 1) d \mu(t) = \int_{0}^{\infty} (e^{tx} - 1) d \mu(t) + \int_{0}^{\infty} 1 d \mu(t) =\\
+= \int_{0}^{\infty} (e^t - 1) {{e^{tx} - 1} \over {e^t - 1}} d \mu(t) + \int_{0}^{\infty} 1 d \mu(t)\\
+\end{multline}
+
+Since $e^t - 1$ is non-negative and integrable, we can define the non-negative finite Borel measure $d \nu(t) = (e^t - 1) d \mu(t)$ that is absolutely continuous with respect to $\mu$, and write:
+
+\begin{equation}
+f(x) =  \int_{0}^{\infty} {{e^{tx} - 1} \over {e^t - 1}} d \nu(t) + \int_{0}^{\infty} 1 d \mu(t) = \int_{0}^{\infty} \uexp{t}(x) d \nu(t) + \int_{0}^{\infty} 1 d \mu(t)
+\end{equation}
+
+Now consider 
+\begin{equation}
+f(0) =  \int_{0}^{\infty} \uexp{t}(0) d \nu(t) + \int_{0}^{\infty} 1 d \mu(t) = 0 + \int_{0}^{\infty} 1 d \mu(t) = \int_{0}^{\infty} 1 d \mu(t)
+\end{equation}
+
+\noindent and so
+
+\begin{equation}
+f(x) - f(0) = \int_{0}^{\infty} \uexp{t}(x) d \nu(t) + \int_{0}^{\infty} 1 d \mu(t) - \int_{0}^{\infty} 1 d \mu(t) = \int_{0}^{\infty} \uexp{t}(x) d \nu(t)
+\end{equation}
+\end{proof}
+
+We can therefore attempt to approximate any absolutely monotonic function $f$ for which $f(0) = 0$ with a finite weighted sum of unit exponentials. Our goal now becomes, given the normalized dataset $\bar{D}$ with all values in $[0,1]$, find a finite weighted sum of unit exponentials that explains the values in $\bar{D}$ as well as possible. By construction, this finite weighted sum will be absolutely monotonic, and because of the theorem, we know that if we use a large enough number of well selected unit exponentials, we should be able to approximate the values as well as any absolutely monotonic function could.
+
+\subsection{Least squares optimization}
+\label{least_squares}
 
 \subsection{Evaluation}
 
