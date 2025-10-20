@@ -133,46 +133,44 @@ However, in this work we use a semi-parametric least squares optimization, which
 
 \subsection{Domain}
 
-Since the data $\mathcal{D}$ is finite, there will be bounds on the $\{x_i\}$ and $\{y_i\}$: 
+Since the data $\mathcal{D}$ is finite, there will be bounds on the $\{x_i\}$
 \begin{equation}
 \begin{array}{l}
 a = \min x_i\\
 b = \max x_i\\
-s = \min y_i\\
-t = \max y_i\\
 \end{array}
 \end{equation}
 
-Therefore, we can safely constrain ourselves to absolutely monotonic functions $f: [a,b] \rightarrow [s, t]$. Moreover, we can reduce the problem to absolutely monotonic functions $\bar{f}: [0,1] \rightarrow [0,1]$ through a simple affine transformation. By transforming $\mathcal{D} = \{(x_i,y_i)\}$ into $\bar{\mathcal{D}} = \{(\bar{x_i},\bar{y_i})\} = \{({{x_i - a} \over {b - a}},{{y_i - s} \over {t - s}})\}$, if we have a solution $\bar{f}: [0,1] \rightarrow [0,1]$ for the problem associated to $\bar{\mathcal{D}}$, we can define
+Therefore, we can safely constrain ourselves to absolutely monotonic functions $f: [a,b] \rightarrow f([a, b])]$. Moreover, we can reduce the problem to absolutely monotonic functions $\bar{f}: [0,1] \rightarrow f([a,b])$ through a simple affine transformation. By transforming the $\{x_i\}$ into $\{\bar{x_i} = {{x_i - a} \over {b - a}}\}$, if we have a solution $\bar{f}: [0,1] \rightarrow f([a,b])$ for the problem associated to $\{\bar{x_i}\}$, we can define
 
 \begin{equation}
-f(x) = s + \bar{f}({{x - a} \over {b - a}}) (t - s)
+f(x) = \bar{f}({{x - a} \over {b - a}})
 \end{equation}
 
 \noindent and we have:
 
 \begin{equation}
 \begin{array}{l}
-f(a) = s + \bar{f}({{a-a} \over {b-a}}) (t - s) = s + \bar{f}(0) (t - s) = s + 0 \cdot (t -s) = s\\ 
-f(b) = s + \bar{f}({{b-a} \over {b-a}}) (t - s) = s + \bar{f}(1) (t-s) = s + 1 \cdot (t-s) = t\\
+f(a) = \bar{f}({{a-a} \over {b-a}}) = \bar{f}(0)\\
+f(b) = \bar{f}({{b-a} \over {b-a}}) = \bar{f}(1)\\
 \end{array}
 \end{equation}
 
 \noindent (correspondence of bounds)
 
 \begin{equation}
-{{f(x_i) - y_i } \over {t-s}} = {{s + \bar{f}({{x_i - a} \over {b-a}}) (t - s) - y_i} \over {t-s}} = \bar{f}({{x_i - a} \over {b-a}}) - {{y_i - s} \over {t-s}} = {{\bar{f}(\bar{x_i}) - \bar{y_i}} \over {1 - 0}}\\
+{f(x_i)} = \bar{f}({{x_i - a} \over {b-a}}) = \bar{f}(\bar{x_i})\\
 \end{equation}
 
 \noindent (correspondence of data points)
 
 \begin{equation}
-\nderiv{f}{n}(x) = {({{1} \over {b - a}})}^n {\nderiv{\bar{f}}{n}} ({{x -a} \over {b-a}}) (t-s)\\
+\nderiv{f}{n}(x) = {({{1} \over {b - a}})}^n {\nderiv{\bar{f}}{n}} ({{x -a} \over {b-a}})\\
 \end{equation}
 
-\noindent ($f$ is absolutely monotonic if and only if $\bar{f}$ is absolutely monotonic, since $b \geq a$ and $t \geq s$).\\
+\noindent ($f$ is absolutely monotonic if and only if $\bar{f}$ is absolutely monotonic, since $b \geq x \geq a$.\\
 
-Therefore, for the remainder of this work, we only consider the problem of fitting absolutely monotonic functions $f: [0,1] \rightarrow [0,1]$ with all data points such that $x_i, y_i \in [0,1]$.
+Therefore, for the remainder of this work, we only consider the problem of fitting absolutely monotonic functions $f: [0,1] \rightarrow f([0,1])$ with all data points such that $x_i \in [0,1]$.
 
 \subsection{Unit exponentials}
 
@@ -185,7 +183,11 @@ We define the parametric {\emph{unit exponentials}} family of absolutely monoton
 \end{equation}
 \end{definition}
 
-(INCLUDE GRAPH WITH SOME UNIT EXPONENTIALS HERE)
+\begin{figure}
+\caption{\label{fig_unit_exponentials}Some unit exponentials}
+\centering
+\includegraphics[width=\textwidth]{unit_exponentials.png}
+\end{figure}
 
 The most immediate advantage of unit exponentials is that they are all pinned to the $[0,1]$ interval:
 
@@ -266,7 +268,9 @@ We can then replace the two values in the numerator,
 \end{multline}
 \end{proof}
 
-By the middle point theorem, for any $t > 0$, there will always be a point $x_1(t) \in [0,1]$ where the first derivative of $\uexp{t}$ will be exactly 1. We will call this the {\emph{kicking point}} of $\uexp{t}$. All unit exponentials go underneath the straight line $\uexp{0}(x) = x$, with lower initial first derivative and higher final first derivative the higher the $t$. At some point, the first derivative will be exactly $1$, which can be identified to be as the point in which the unit exponential ``kicks off'' and begins its exponential growth. The location of the kicking point with respect to $t$ is interesting as it approximately separates the area where the unit exponential is flat and where it is steep. This point will always be $x_1(t) \geq 0.5$ for $t > 0$, and will get progressively closer to $1$ as $t$ increases. It is, in fact, more interesting or useful to consider instead the distance between $x_1(t)$ and $1$. Write $1 - {\bar{x}}_1(t) = x_1(t)$. We can calculate this value analytically:
+By the middle point theorem, for any $t > 0$, there will always be a point $x_1(t) \in [0,1]$ where the first derivative of $\uexp{t}$ will be exactly 1. We will call this the {\emph{exploding point}} of $\uexp{t}$. All unit exponentials go underneath the straight line $\uexp{0}(x) = x$, with lower initial first derivative and higher final first derivative the higher the $t$. At some point, the first derivative will be exactly $1$, which can be identified to be as the point in which the unit exponential ``kicks off'' and begins its exponential growth. The location of the exploding point with respect to $t$ is interesting as it approximately separates the area where the unit exponential is flat and where it is steep. This point will always be $x_1(t) \geq 0.5$ for $t > 0$, and will get progressively closer to $1$ as $t$ increases. See figure \ref{fig_exploding_points} for a visualization of the exploding points of various unit exponentials.
+
+It is, in fact, more interesting or useful to consider instead the distance between $x_1(t)$ and $1$. Write $1 - {\bar{x}}_1(t) = x_1(t)$. We can calculate this value analytically:
 
 \begin{multline}
 \uexp{t}^{\prime}(x_1(t)) = \uexp{t}^{\prime}(1 - {\bar{x}}_1(t)) = {{t e^{t (1 - {\bar{x}}_1(t))}} \over {e^t - 1}} = 1\\
@@ -276,11 +280,48 @@ t e^{t (1 - {\bar{x}}_1(t))} = e^t - 1\\
 {\bar{x}}_1(t) = {{t + \ln t - \ln (e^t - 1)} \over {t}}\\
 \end{multline}
 
-(INSERT PLOT FOR THE KICKING POINT DEPENDING ON t)
+\begin{figure}
+\caption{\label{fig_exploding_points}Exploding points}
+\centering
+\includegraphics[width=\textwidth]{exploding_points.png}
+\end{figure}
 
-An interesting way to think about this gap between the kicking point and $1$ is to see how it changes when we multiply $t$ by a constant $k > 1$. Therefore, we can compare ${\bar{x}}_1(t)$ with ${\bar{x}}_1(kt)$. The latter will be smaller, as a larger $t$ moves the kicking point closer to $1$, but by how much? For large enough $t$, multiplying $t$ by $k > 1$ reduces the gap between the kicking point and $1$ to approximately $1/k$. That is, ${{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} \simeq k$. We can show this numerically by plotting ${{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}}$ for various values of $k$. This is very useful in the implementation of an iterative process to find a semiparametric fitting of an absolutely monotonic function as a sum of unit exponentials (see \S \ref{least_squares}).
+An interesting way to think about this gap between the exploding point and $1$ is to see how it changes when we multiply $t$ by a constant $k > 1$. Therefore, we can compare ${\bar{x}}_1(t)$ with ${\bar{x}}_1(kt)$. The latter will be smaller, as a larger $t$ moves the exploding point closer to $1$, but by how much? For large enough $t$, multiplying $t$ by $k > 1$ reduces the gap between the exploding point and $1$ to approximately $1/k$. That is, ${{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} \simeq k$. This is very useful in the implementation of an iterative process to find a semiparametric fitting of an absolutely monotonic function as a sum of unit exponentials, as we can use a multiplying factor $k$ to obtain meaningful variation in the parameters of the unit exponentials that are independent of the current values of $t$ (see \S \ref{least_squares}).\\
 
-(INSERT PLOT FOR REDUCING THE GAP WHEN MULTIPLYING t)
+We can show this numerically by plotting ${{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}}$ for various values of $k$. See figure \ref{fig_exploding_point_evolution}. Note that the convergence is notoriously slow (logarithmic), but it stabilises relatively quickly in a relatively constant range. It can be proven to be exactly $k$ in the limit (though this is not very useful because we will not use such large $t$).
+
+\begin{figure}
+\caption{\label{fig_exploding_point_evolution}Exploding point change when multiplying}
+\centering
+\includegraphics[width=\textwidth]{exploding_point_evolution.png}
+\end{figure}
+
+\begin{theorem}
+\begin{equation}
+\lim_{t \rightarrow \infty} {{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} = k
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+First note that
+
+\begin{equation}
+t - \ln(e^t - 1) = t - \ln(e^t(1 - e^{-t})) = t - t - \ln(1 - e^{-t}) = - \ln(1-e^{-t})
+\end{equation}
+
+With this in mind, simplify the original quotient.
+
+\begin{multline}
+{{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} = {{t + \ln t - \ln(e^t - 1)} \over {kt + \ln kt - \ln(e^{kt} - 1)}} \cdot {{kt} \over {t}} =\\
+k \cdot {{\ln t - \ln(1-e^{-t})} \over {\ln kt - \ln(1-e^{-kt})}} = k \cdot {{\ln t - \ln(1-e^{-t})} \over {\ln k + \ln t - \ln(1-e^{-kt})}}\\
+\end{multline}
+
+The latter terms go to 0 as $t \rightarrow \infty$, and so we have
+
+\begin{equation}
+\lim_{t \rightarrow \infty} {{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} = \lim_{t \rightarrow \infty} k \cdot {{\ln t} \over {\ln k + \ln t}} = k \cdot 1 = k
+\end{equation}
+\end{proof}
 
 One last but critical element to explain how we use unit exponentials to fit absolutely monotonic functions is to show how the Bernstein theorem (theorem \ref{bernstein_theorem}) applies to them.
 
@@ -319,7 +360,7 @@ f(x) - f(0) = \int_{0}^{\infty} \uexp{t}(x) d \nu(t) + \int_{0}^{\infty} 1 d \mu
 \end{equation}
 \end{proof}
 
-We can therefore attempt to approximate any absolutely monotonic function $f$ for which $f(0) = 0$ with a finite weighted sum of unit exponentials. Our goal now becomes, given the normalized dataset $\bar{D}$ with all values in $[0,1]$, find a finite weighted sum of unit exponentials that explains the values in $\bar{D}$ as well as possible. By construction, this finite weighted sum will be absolutely monotonic, and because of the theorem, we know that if we use a large enough number of well selected unit exponentials, we should be able to approximate the values as well as any absolutely monotonic function could.
+We can therefore attempt to approximate any absolutely monotonic function $f$ for which $f(0) = 0$ with a finite weighted sum of unit exponentials. Our goal now becomes, given the normalized dataset $\mathcal{D}$ with all x values in $[0,1]$, find a finite weighted sum of unit exponentials that explains the values in $\mathcal{D}$ as well as possible. By construction, this finite weighted sum will be absolutely monotonic, and because of the theorem, we know that if we use a large enough number of well selected unit exponentials, we should be able to approximate the values as well as any absolutely monotonic function could.
 
 \subsection{Least squares optimization}
 \label{least_squares}
