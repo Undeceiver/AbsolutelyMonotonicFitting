@@ -9,6 +9,7 @@
 \input{include.tex}
 \input{\pathcommon{standard_theorems}}
 \input{\pathcommon{derivatives}}
+\input {\pathcommon{common_macros}}
 
 \newcommand{\realfunction}[2] {{#1: #2 \rightarrow \mathbb{R}}}
 \newcommand{\uexp}[1] {{\text{uexp}_{#1}}}
@@ -411,6 +412,34 @@ f(x) = \sum\limits_{i=1..n} w_i \uexp{t_i}(x)\\
 \end{equation}
 
 \subsection{Evaluation}
+
+In terms of evaluation metrics, because we are using nonlinear least squares and there is no statistical interpretation to our approach, the most reasonable metric is mean squared error (MSE). We normalize it for each test case to the value $f(1)$ of the fitted source function at $1$ (NMSE).\\
+
+More interestingly, there is the question of which datasets to test it on. In all cases we generate the dataset from an underlying function. We however have variation in multiple dimensions. We measure the NMSE on the same points used to fit the function, which we call fit NMSE, and then on a uniform sample of 200 points (without noise), which we call source NMSE. The difference between these two allows us to analyse to what degree the specific sampling affects the goodness of fit, with a high difference indicating that absolutely monotonic functions are too flexible, with a fit that works well for the samples but not in other parts of the support. For each test case, we run the fit $100$ times with different noise and point samples, and calculate the average and worst test NMSE.
+
+\begin{itemize}
+
+\item \itemtitle{Number of samples} In each test case we generate $N$ data points from the source function to fit the function. We try with a low ($N = 10$), medium ($N = 25$) and high ($N = 200$) sample size. It is worth noting that the sample x values are uniformly distributed in $(0,1)$. Due to the nature of absolutely monotonic functions, x values closer to $1$ are harder to fit because the functions grow more quickly near them, so uniform sampling can make the fit quality vary more depending on the specific sample.
+\item \itemtitle{Noise} It is interesting to see the effect of random noise on the method. As such, we have test cases with no random noise and with gaussian noise with standard deviation of different sizes, relative to the value of the function at $1$ (the maximum): small gaussian noise ($\sigma = 0.01 \cdot f(1)$) and high gaussian noise ($\sigma = 0.1 \cdot f(1)$). Note that with high noise, the fit NMSE can be lower than the source NMSE, as the method can compensate for the noise in the fit over multiple samples.
+\item \itemtitle{Function} We try the fit with various functions with different properties:
+\begin{itemize}
+\item \itemtitle{Absolutely monotonic functions} The cases for which the method should be best suited and which should show small error.
+\begin{itemize}
+\item \itemtitle{Sum of unit exponentials} The fit can potentially be exact, and any error in the result is due to the approximation method rather than the problem setup. We try with $f_1(x) = 0.3 \uexp{2.5}(x) + 2.6 \uexp{10.35}(x) + 1.24 \uexp{53.4}(x)$.
+\item \itemtitle{Absolutely monotonic polynomials} These have a finite number of non-zero derivatives, and do not match exactly with a finite sum of unit exponentials. We try with $f_2(x) = x^2$ and $f_3(x) = x^5 + 2 x^4 + x^3 + x$.
+\end{itemize}
+
+\item \itemtitle{Convex functions that are not absolutely monotonic} It is interesting to evaluate how well the method works when the absolutely monotonic assumption is untrue for the underlying function, but it has a convex shape. Some error is to be expected, but we wish to evaluate how good this method can be as an approximation for convex functions.
+\begin{itemize}
+\item \itemtitle{Polynomial} We try with $f_4(x) = 3 x^2 - x^3$. This polynomial is convex in $(0,1)$ but becomes concave exactly at $1$. We also try with $f_5(x) = x^4 - 4x^3 + 6x^2$, which is convex for $x > 0$, and has a positive fourth derivative, but its third derivative is negative in $(0,1)$.
+\item \itemtitle{Trigonometric function} We try with $f_6(x) = \sin({{\pi} \over {2}} x - {{\pi} \over {2}}) + 1$, which is convex in $(0,1)$ but becomes concave exactly at $1$.
+\item \itemtitle{Piecewise function} We try with $f_7(x) = 4x^2 \{x \in [0,0.5]\} | 4x - 1 \{x \in [0.5,1]\}$. This function is convex everywhere, continuous, has a continuous first derivative, but its second derivative jumps at $0.5$ from $8$ to $0$.
+\end{itemize}
+
+\end{itemize}
+\end{itemize}
+
+TODO: Discussion about comparing with other libraries. Check ChatGPT discussion. It suggested cvxpy.
 
 \section{Results}
 
