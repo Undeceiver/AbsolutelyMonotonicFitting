@@ -31,50 +31,44 @@ This paper has two purposes. First, to present a method for fitting absolutely m
 
 \subsection{Absolutely monotonic functions}
 
-A smooth function $\realfunction{f}{[a,b]}$ (where $b$ can be $+\infty$) is {\emph{absolutely monotonic}} if all of its derivatives are non-negative at every point in the interval. A simple example of an absolutely monotonic function is the exponential $e^x$, and in fact in a very significant sense, it can be shown that all absolutely monotonic functions are essentially sums of exponentials, a key idea supporting this work. More accurately, in his classic work \cite{1929_bernstein_absolutely_monotonic}, among other things, Bernstein characterized all absolutely monotonic functions as weighted averages of exponential functions with positive exponents.
+A smooth function $\realfunction{f}{[a,b]}$ (where $a$ can be $-\infty$ and $b$ can be $+\infty$) is {\emph{absolutely monotonic}} if all of its derivatives are non-negative at every point in the interval. A simple example of an absolutely monotonic function is the exponential $e^x$, and in fact in a very significant sense, it can be shown that all absolutely monotonic functions that extend infinitely towards the left are essentially sums of exponentials, a key idea supporting this work. More accurately, in his classic work \cite{1929_bernstein_absolutely_monotonic}, Bernstein characterized all absolutely monotonic functions on the left half-line as weighted averages of exponential functions with positive exponents.
 
 \begin{theorem}[\cite{1929_bernstein_absolutely_monotonic}]
 \label{bernstein_theorem}
-Let $\realfunction{f}{[a,b]}$ (where $a$ and $b$ are both finite) be an absolutely monotonic function. Then, there is a non-negative finite Borel measure $\mu$ such that
+Let $\realfunction{f}{[-\infty,b]}$ be an absolutely monotonic function. Then, there is a non-negative finite Borel measure $\mu$ such that
 
 \begin{equation}
 f(x) = \int_{0}^{\infty} e^{tx} d \mu(t)
 \end{equation}
 
-\noindent for every $x \in [a,b]$.
+\noindent for every $x \in [-\infty,b]$.
 \end{theorem}
 
-There is a direct connection between absolutely monotonic functions and {\emph{completely monotonic functions}}, which are smooth functions with alternating sign derivatives. Specifically, a function $f(x)$ is absolutely monotonic in $[a,b]$ if and only if the function $f(-x)$ is completely monotonic in $[-b,-a]$. For example, $e^{-x}$ is a completely monotonic function, and similarly, Bernstein's theorem, when applied to completely monotonic functions, characterizes them as weighted averages of exponential functions with negative exponents (the Laplace transform of the non-negative measure $\mu$).
-
-In informal terms, one can describe the function $e^x$ to be absolutely monotonic {\emph{towards the right}} and completely monotonic {\emph{towards the left}}, and the absolutely monotonic or completely monotonic views of functions are more related with what side of the function we are focusing on, and the corresponding properties that they have on them.\\
-
-For various significant reasons, there has been substantially more work on completely monotonic functions than on absolutely monotonic functions. While it is tempting to argue that they are simply two sides of the same coin, their relation is limited by the nature of the result we are focusing on. More precisely, a lot of the work on completely monotonic functions considers them in the half-line $[0,\infty)$, which when mirrored results in the interval $(-\infty,0]$ for absolutely monotonic functions. However, the interesting monotonic behaviour of absolutely monotonic functions is most relevant in intervals on the right side of the real line. Similarly, completely monotonic functions involve small absolute values and controlled decay, whereas absolutely monotonic functions involve very large absolute values and unfettered growth. This means that the types of interesting behaviours and challenges in each of these two sides of the coin can be quite different in practice.\\
+There is a direct connection between absolutely monotonic functions and {\emph{completely monotonic functions}}, which are smooth functions with alternating sign derivatives. Specifically, a function $f(x)$ is absolutely monotonic in $[-\infty,b]$ if and only if the function $f(-x)$ is completely monotonic in $[-b,+\infty]$. For example, $e^{-x}$ is a completely monotonic function, and similarly, Bernstein's theorem, when applied to completely monotonic functions, characterizes them as weighted averages of exponential functions with negative exponents (the Laplace transform of the non-negative measure $\mu$).\\
 
 Absolutely monotonic and completely monotonic functions are particular cases of exponential sums. When both positive, negative, and complex exponents are combined, more general types of functions appear, including periodic functions and variations on these.\\
 
 Absolutely monotonic functions form a {\emph{convex cone}}. In particular, weighted sums of absolutely monotonic functions are absolutely monotonic.
 
 \begin{lemma}
-If $f, g$ are absolutely monotonic functions and $\alpha, \beta \in [0,+\infty)$, then $\alpha f + \beta g$ is an absolutely monotonic function.
+If $f, g$ are absolutely monotonic functions on $[a,b]$ and $\alpha, \beta \in [0,+\infty)$, then $\alpha f + \beta g$ is an absolutely monotonic function on $[a,b]$.
 \end{lemma}
 
-The proof is trivial by looking at the definition of absolute monotonicity in terms of non-negative derivatives and linearity of derivation.
-
-This can naturally be extended to infinite sums of functions (of which the Bernstein theorem presents a particular case) over non-negative measures, but we will not use this result in this work so we skip the proof of this slightly more general result. Other than Bernstein's theorem, we will limit ourselves to finite sums of absolutely monotonic functions.\\
+The proof is trivial by looking at the definition of absolute monotonicity in terms of non-negative derivatives and linearity of derivation.\\
 
 We do not concern ourselves too much with further theoretical properties of absolutely monotonic or completely monotonic functions in this work, but for the interested reader, \cite{2014_koumandos_completely_monotonic} offers a modern summary of theoretical results and additional related families of functions, such as logarithmically completely monotonic functions, Bernstein functions, and Stieltjes functions.\\
 
-\cite{2011_rajba_integral_representation_convex_functions} is a particularly interesting piece of work partially bridging the gap between methods focused on convexity and absolute monotonicity. It presents an integral representation of {\emph{$n$-convex}} functions, which are functions where a certain number of derivatives are positive. In other words, an absolutely monotonic function is a function that is $n$-convex for every $n$. The mathematics in this work and the representation it offers for $n$-convex functions are strongly reminiscent of the Bernstein theorem. In particular, there is a direct relationship between the terms in this work and the Taylor series of the exponential function, indicating that this integral representation is using ``limited exponential functions'' consisting of partial Taylor series of exponential functions, up to the derivative that is required. It is surprising, then, that the work does not mention the Bernstein theorem or the words ``absolutely monotonic'' or ``completely monotonic'' whatsoever, or cite any work in this subject. More precisely, theorem 2.1 in \cite{2011_rajba_integral_representation_convex_functions} states that any n-convex function $f$ with regular derivatives in $(a,b)$ is such that:
-
-\begin{equation}
-f(x) = \int_{(a,\epsilon]} (-1)^{n+1} {{[-(x-u)]^n_{+}} \over {n!}} dg_{(n)-}(u) + \int_{[\epsilon,b)} {{(x-u)^n_{+}} \over {n!}} dg_{(n)+}(u) + Q(x)
-\end{equation}
-
-\noindent (with certain constraints on the terms in this equation).
-
-Informally, one can draw a clear connection between this and absolutely monotonic and completely monotonic functions when we notice that ${{(x-u)^n_{+}} \over {n!}}$ is the truncated Taylor series for $e^x$ up to $n$, and therefore this equation is essentially separating the n-convex function $f$ into a completely monotonic part (to degree $n$), an absolutely monotonic part (to degree $n$), and a remainder term $Q(x)$ with lesser degree.
-
-While we do not use them in this paper, this work can be relevant in extending some of the notions here to less constrained cases like $n$-convex functions, or to better understand the methods and their limitations.\\
+%\cite{2011_rajba_integral_representation_convex_functions} is a particularly interesting piece of work partially bridging the gap between methods focused on convexity and absolute monotonicity. It presents an integral representation of {\emph{$n$-convex}} functions, which are functions where a certain number of derivatives are positive. In other words, an absolutely monotonic function is a function that is $n$-convex for every $n$. The mathematics in this work and the representation it offers for $n$-convex functions are strongly reminiscent of the Bernstein theorem. In particular, there is a direct relationship between the terms in this work and the Taylor series of the exponential function, indicating that this integral representation is using ``limited exponential functions'' consisting of partial Taylor series of exponential functions, up to the derivative that is required. It is surprising, then, that the work does not mention the Bernstein theorem or the words ``absolutely monotonic'' or ``completely monotonic'' whatsoever, or cite any work in this subject. More precisely, theorem 2.1 in \cite{2011_rajba_integral_representation_convex_functions} states that any n-convex function $f$ with regular derivatives in $(a,b)$ is such that:
+%
+%\begin{equation}
+%f(x) = \int_{(a,\epsilon]} (-1)^{n+1} {{[-(x-u)]^n_{+}} \over {n!}} dg_{(n)-}(u) + \int_{[\epsilon,b)} {{(x-u)^n_{+}} \over {n!}} dg_{(n)+}(u) + Q(x)
+%\end{equation}
+%
+%\noindent (with certain constraints on the terms in this equation).
+%
+%Informally, one can draw a clear connection between this and absolutely monotonic and completely monotonic functions when we notice that ${{(x-u)^n_{+}} \over {n!}}$ is the truncated Taylor series for $e^x$ up to $n$, and therefore this equation is essentially separating the n-convex function $f$ into a completely monotonic part (to degree $n$), an absolutely monotonic part (to degree $n$), and a remainder term $Q(x)$ with lesser degree.
+%
+%While we do not use them in this paper, this work can be relevant in extending some of the notions here to less constrained cases like $n$-convex functions, or to better understand the methods and their limitations.\\
 
 \subsection{Fitting exponential sums}
 \label{exponential_sums}
@@ -83,7 +77,7 @@ There is a large body of work on fitting exponential sums to data. A lot of this
 
 One of the most significant families of methods for fitting exponential sums are the so-called Prony methods. Prony methods are spectral methods that use the relation between exponential sums, uniform sampling, and difference equations that enable a certain type of frequency analysis using linear algebra. \cite{2021_keller_prony_methods} offers a modern survey of Prony methods, focusing on common principles, such that they are linear methods on the space of operators on functions, and that they rely on sampling at specific distances to capture periodic behaviours in the signals. A lot of work on Prony methods is related to the optimization of the linear algebra aspects of the algorithms.
 
-Prony methods are more general in its function space, present more constraints to the data, and focus more on frequency analysis of a signal than on good numerical fitting of a real function. Their goal is the analysis of signals, often assumed to be in the $[0,+\infty)$ half-line, rather than the fitting of observed real data on the absolutely monotonic side of the function. Therefore, they are not particularly well suited for fitting absolutely monotonic functions, even if they could theoretically be applied. It could be interesting to apply some of these methods to examples on absolutely monotonic functions in bounded intervals by mirroring them and using Prony methods, to compare with the results in this paper, but we have decided not to pursue this avenue further.\\
+Prony methods are more general in its function space, present more constraints to the data, and focus more on frequency analysis of a signal than on good numerical fitting of a real function. Their goal is the analysis of signals, rather than the fitting of observed real data on the absolutely monotonic side of the function. Therefore, they are not particularly well suited for fitting absolutely monotonic functions, even if they could theoretically be applied. It could be interesting to apply some of these methods to examples on absolutely monotonic functions in bounded intervals by mirroring them and using Prony methods, to compare with the results in this paper, but we have decided not to pursue this avenue further.\\
 
 Other methods have been explored for fitting exponential sums over time. \cite{1976_kammler_approximation_completely_monotonic} presents a theoretically focused and exploratory analysis of using Chebyshev polynomials to approximate completely monotonic functions. \cite{1976_smith_decomposition_exponential_decays} discusses several potential methods, also with a focus on completely monotonic functions, with limited success, and with significant computational constraints that are not applicable in the current time. \cite{1980_evans_least_squares_exponential_sum} uses a least squares algorithm to fit completely monotonic functions, but also suffers from being computationally obsolete. It does note, however, that with a least squares approach, numerical aspects become critical, such as initialization of values or behaviour of the parameter space. We will discuss these aspects later in this work. In a slightly more modern survey, \cite{2002_holmstr_parameter_estimation_fitting_exponentials} discusses a wide array of methods for fitting exponential sums, including Prony methods, least squares approaches, and many others. None of these pay significant attention to absolutely monotonic functions.
 
@@ -423,19 +417,21 @@ More interestingly, there is the question of which datasets to test it on. In al
 \item \itemtitle{Noise} It is interesting to see the effect of random noise on the method. As such, we have test cases with no random noise and with gaussian noise with standard deviation of different sizes, relative to the value of the function at $1$ (the maximum): small gaussian noise ($\sigma = 0.01 \cdot f(1)$) and high gaussian noise ($\sigma = 0.1 \cdot f(1)$). Note that with high noise, the fit NMSE can be lower than the source NMSE, as the method can compensate for the noise in the fit over multiple samples.
 \item \itemtitle{Function} We try the fit with various functions with different properties:
 \begin{itemize}
-\item \itemtitle{Absolutely monotonic functions} The cases for which the method should be best suited and which should show small error.
+\item \itemtitle{Absolutely monotonic functions on $(-\infty,a]$} The cases for which the method should be best suited and which should show small error.
 \begin{itemize}
-\item \itemtitle{Sum of unit exponentials} The fit can potentially be exact, and any error in the result is due to the approximation method rather than the problem setup. We try with $f_1(x) = 0.3 \uexp{2.5}(x) + 2.6 \uexp{10.35}(x) + 1.24 \uexp{53.4}(x)$.
-\item \itemtitle{Absolutely monotonic polynomials} These have a finite number of non-zero derivatives, and do not match exactly with a finite sum of unit exponentials. We try with $f_2(x) = x^2$ and $f_3(x) = x^5 + 2 x^4 + x^3 + x$.
+\item \itemtitle{Discrete sum of unit exponentials} The fit can potentially be exact, and any error in the result is due to the approximation method rather than the problem setup. We try with $f_1(x) = 0.3 \uexp{2.5}(x) + 2.6 \uexp{10.35}(x) + 1.24 \uexp{53.4}(x)$.
+\item \itemtitle{Hyperexponentials} Bernstein's theorem still applies to them but only up to an (arbitrary) limited interval - any fit will still fail if we extend it far enough towards positive infinity. The method should be able to fit them perfectly since our data is constrained, but the behaviour near the top of the interval might be complicated. We normalize them so that they go between $0$ and $1$ to avoid numerical errors with very large numbers. We try with $f_2(x) = {{e^{e^x} - e} \over {e^e - e}}$ as a simple case and $f_3(x) = {{e^{e^{e^x}} - e^e} \over {e^{e^e}} - e^e}$.
 \end{itemize}
-
+\item \itemtitle{Absolutely monotonic functions on $[0,1]$} Bernstein's theorem no longer applies to them so some error is to be expected.
+\begin{itemize}
+\item \itemtitle{Absolutely monotonic polynomials} These have a finite number of non-zero derivatives, and do not match exactly with a finite sum of unit exponentials. We try with $f_4(x) = x^2$ and $f_5(x) = x^5 + 2 x^4 + x^3 + x$.
+\end{itemize}
 \item \itemtitle{Convex functions that are not absolutely monotonic} It is interesting to evaluate how well the method works when the absolutely monotonic assumption is untrue for the underlying function, but it has a convex shape. Some error is to be expected, but we wish to evaluate how good this method can be as an approximation for convex functions.
 \begin{itemize}
-\item \itemtitle{Polynomial} We try with $f_4(x) = 3 x^2 - x^3$. This polynomial is convex in $(0,1)$ but becomes concave exactly at $1$. We also try with $f_5(x) = x^4 - 4x^3 + 6x^2$, which is convex for $x > 0$, and has a positive fourth derivative, but its third derivative is negative in $(0,1)$.
-\item \itemtitle{Trigonometric function} We try with $f_6(x) = \sin({{\pi} \over {2}} x - {{\pi} \over {2}}) + 1$, which is convex in $(0,1)$ but becomes concave exactly at $1$.
-\item \itemtitle{Piecewise function} We try with $f_7(x) = 4x^2 \{x \in [0,0.5]\} | 4x - 1 \{x \in [0.5,1]\}$. This function is convex everywhere, continuous, has a continuous first derivative, but its second derivative jumps at $0.5$ from $8$ to $0$.
+\item \itemtitle{Polynomial} We try with $f_6(x) = 3 x^2 - x^3$. This polynomial is convex in $(0,1)$ but becomes concave exactly at $1$. We also try with $f_7(x) = x^4 - 4x^3 + 6x^2$, which is convex for $x > 0$, and has a positive fourth derivative, but its third derivative is negative in $(0,1)$.
+\item \itemtitle{Trigonometric function} We try with $f_8(x) = \sin({{\pi} \over {2}} x - {{\pi} \over {2}}) + 1$, which is convex in $(0,1)$ but becomes concave exactly at $1$.
+\item \itemtitle{Piecewise function} We try with $f_9(x) = 4x^2 \{x \in [0,0.5]\} | 4x - 1 \{x \in [0.5,1]\}$. This function is convex everywhere, continuous, has a continuous first derivative, but its second derivative jumps at $0.5$ from $8$ to $0$.
 \end{itemize}
-
 \end{itemize}
 \end{itemize}
 
