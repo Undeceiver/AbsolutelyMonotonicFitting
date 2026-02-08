@@ -14,7 +14,7 @@
 \newcommand{\realfunction}[2] {{#1: #2 \rightarrow \mathbb{R}}}
 \newcommand{\uexp}[1] {{\text{uexp}_{#1}}}
 
-\title{Fitting absolutely monotonic functions}
+\title{Fitting absolutely monotonic real analytic functions in bounded intervals}
 \author{Juan Casanova}
 
 \begin{document}
@@ -27,419 +27,75 @@ This is the abstract.
 
 \section{Introduction}
 
-This paper has two purposes. First, to present a method for fitting absolutely monotonic functions to data. Second, to discuss in this context three areas of mathematics research that, surprisingly, are rarely discussed together. We summarize the relevant similarities and connections of each of them with the aforementioned method, and consequently between them, as well as how this relates to potential applications of this work and existing literature.
-
 \subsection{Absolutely monotonic functions}
 
-A smooth function $\realfunction{f}{[a,b]}$ (where $a$ can be $-\infty$ and $b$ can be $+\infty$) is {\emph{absolutely monotonic}} if all of its derivatives are non-negative at every point in the interval. A simple example of an absolutely monotonic function is the exponential $e^x$, and in fact in a very significant sense, it can be shown that all absolutely monotonic functions that extend infinitely towards the left are essentially sums of exponentials, a key idea supporting this work. More accurately, in his classic work \cite{1929_bernstein_absolutely_monotonic}, Bernstein characterized all absolutely monotonic functions on the left half-line as weighted averages of exponential functions with positive exponents.
+A real function is {\emph{absolutely monotonic}} if all of its derivatives are non-negative. Absolutely monotonic functions grow faster and faster as we approach higher values, curving upwards in every sense. They are growing and convex, though not all growing convex functions are absolutely monotonic.
 
-\begin{theorem}[\cite{1929_bernstein_absolutely_monotonic}]
-\label{bernstein_theorem}
-Let $\realfunction{f}{[-\infty,b]}$ be an absolutely monotonic function. Then, there is a non-negative finite Borel measure $\mu$ such that
+Convex smooth functions, and in particular fitting convex smooth functions from samples, have been studied extensively \cite{2001_groeneboom_estimation_convex_function, 2015_lu_spline_monotonic_regression, 2015_lebair_derivative_constrain_spline, 2008_aguilera_approximating_optimization_convex_functions, 2013_hannah_multivariate_convex_regression, 2002_holmstr_parameter_estimation_fitting_exponentials, 2005_lachand_minimizing_convex_bodies, 2011_kopotun_shape_preserving_approximation_algebraic_polynomials} due to the multitude of applications in economics, statistics, machine learning, etc. Like other types of {\emph{shape-constrained estimation}}, we know or wish the resulting function to fulfill certain growth or smoothness properties, but also wish to fit the available data as best as possible.\\
 
-\begin{equation}
-f(x) = \int_{0}^{\infty} e^{tx} d \mu(t)
-\end{equation}
+\subsection{Motivating problem: reward curves}
 
-\noindent for every $x \in [-\infty,b]$.
-\end{theorem}
+The motivating problem for this paper is the production of {\emph{reward curves from scores in a competitive single player game}}. Specifically, Beat Saber\footnote{\url{https://beatsaber.com/}} is a virtual reality rhythm game released in 2018 in which players play single player maps with a maximum possible score, attempting to get as close as possible. Scores in Beat Saber are often represented as percentages of the maximum possible score. Beat Saber has rich scoring mechanics\footnote{\url{https://bsmg.wiki/ranking-guide.html}}, and a healthy competitive scene with upwards of 60,000 active ranked players\footnote{Verified using BeatLeader's search functionality at \url{https://beatleader.com/ranking/1?mapsType=all&recentScoreTime=1721433600}}, which can be observed through its two most popular ranked leaderboards: ScoreSaber\footnote{\url{https://scoresaber.com/}} and BeatLeader\footnote{\url{https://beatleader.xyz/}}. Competitive Beat Saber focuses on large pools of {\emph{custom}} maps made by members of the community ({\emph{mappers}}) that undergo a ranking process\footnote{\url{https://beatleader.wiki/en/ranking/Ranking-your-map}} to ensure their competitive viability. For example, BeatLeader offers over 3500 different ranked maps\footnote{\url{https://beatleader.xyz/leaderboards}}.
 
-There is a direct connection between absolutely monotonic functions and {\emph{completely monotonic functions}}, which are smooth functions with alternating sign derivatives. Specifically, a function $f(x)$ is absolutely monotonic in $[-\infty,b]$ if and only if the function $f(-x)$ is completely monotonic in $[-b,+\infty]$. For example, $e^{-x}$ is a completely monotonic function, and similarly, Bernstein's theorem, when applied to completely monotonic functions, characterizes them as weighted averages of exponential functions with negative exponents (the Laplace transform of the non-negative measure $\mu$).\\
+Experienced Beat Saber players observe a high diminishing returns difficulty curve. The closer to 100\%, the harder it is to improve the score further. There are exactly two 100\% scores across all ranked maps in Beat Leader (over 3500 maps, over 60,000 players), on particularly easy maps by particularly skilled players. The difference in difficulty between a 98\% and a 99\% score in a map is orders of magnitude larger than the difference between a 90\% and a 91\%. Most scores that do not fail the map are over 70\% to begin with.
 
-Absolutely monotonic and completely monotonic functions are particular cases of exponential sums. When both positive, negative, and complex exponents are combined, more general types of functions appear, including periodic functions and variations on these.\\
-
-Absolutely monotonic functions form a {\emph{convex cone}}. In particular, weighted sums of absolutely monotonic functions are absolutely monotonic.
-
-\begin{lemma}
-If $f, g$ are absolutely monotonic functions on $[a,b]$ and $\alpha, \beta \in [0,+\infty)$, then $\alpha f + \beta g$ is an absolutely monotonic function on $[a,b]$.
-\end{lemma}
-
-The proof is trivial by looking at the definition of absolute monotonicity in terms of non-negative derivatives and linearity of derivation.\\
-
-We do not concern ourselves too much with further theoretical properties of absolutely monotonic or completely monotonic functions in this work, but for the interested reader, \cite{2014_koumandos_completely_monotonic} offers a modern summary of theoretical results and additional related families of functions, such as logarithmically completely monotonic functions, Bernstein functions, and Stieltjes functions.\\
-
-%\cite{2011_rajba_integral_representation_convex_functions} is a particularly interesting piece of work partially bridging the gap between methods focused on convexity and absolute monotonicity. It presents an integral representation of {\emph{$n$-convex}} functions, which are functions where a certain number of derivatives are positive. In other words, an absolutely monotonic function is a function that is $n$-convex for every $n$. The mathematics in this work and the representation it offers for $n$-convex functions are strongly reminiscent of the Bernstein theorem. In particular, there is a direct relationship between the terms in this work and the Taylor series of the exponential function, indicating that this integral representation is using ``limited exponential functions'' consisting of partial Taylor series of exponential functions, up to the derivative that is required. It is surprising, then, that the work does not mention the Bernstein theorem or the words ``absolutely monotonic'' or ``completely monotonic'' whatsoever, or cite any work in this subject. More precisely, theorem 2.1 in \cite{2011_rajba_integral_representation_convex_functions} states that any n-convex function $f$ with regular derivatives in $(a,b)$ is such that:
-%
-%\begin{equation}
-%f(x) = \int_{(a,\epsilon]} (-1)^{n+1} {{[-(x-u)]^n_{+}} \over {n!}} dg_{(n)-}(u) + \int_{[\epsilon,b)} {{(x-u)^n_{+}} \over {n!}} dg_{(n)+}(u) + Q(x)
-%\end{equation}
-%
-%\noindent (with certain constraints on the terms in this equation).
-%
-%Informally, one can draw a clear connection between this and absolutely monotonic and completely monotonic functions when we notice that ${{(x-u)^n_{+}} \over {n!}}$ is the truncated Taylor series for $e^x$ up to $n$, and therefore this equation is essentially separating the n-convex function $f$ into a completely monotonic part (to degree $n$), an absolutely monotonic part (to degree $n$), and a remainder term $Q(x)$ with lesser degree.
-%
-%While we do not use them in this paper, this work can be relevant in extending some of the notions here to less constrained cases like $n$-convex functions, or to better understand the methods and their limitations.\\
-
-\subsection{Fitting exponential sums}
-\label{exponential_sums}
-
-There is a large body of work on fitting exponential sums to data. A lot of this work is related to signal analysis and therefore is concerned with general exponential sums, including positive, negative, and complex terms; though practical work is often limited to discrete sums.\\ 
-
-One of the most significant families of methods for fitting exponential sums are the so-called Prony methods. Prony methods are spectral methods that use the relation between exponential sums, uniform sampling, and difference equations that enable a certain type of frequency analysis using linear algebra. \cite{2021_keller_prony_methods} offers a modern survey of Prony methods, focusing on common principles, such that they are linear methods on the space of operators on functions, and that they rely on sampling at specific distances to capture periodic behaviours in the signals. A lot of work on Prony methods is related to the optimization of the linear algebra aspects of the algorithms.
-
-Prony methods are more general in its function space, present more constraints to the data, and focus more on frequency analysis of a signal than on good numerical fitting of a real function. Their goal is the analysis of signals, rather than the fitting of observed real data on the absolutely monotonic side of the function. Therefore, they are not particularly well suited for fitting absolutely monotonic functions, even if they could theoretically be applied. It could be interesting to apply some of these methods to examples on absolutely monotonic functions in bounded intervals by mirroring them and using Prony methods, to compare with the results in this paper, but we have decided not to pursue this avenue further.\\
-
-Other methods have been explored for fitting exponential sums over time. \cite{1976_kammler_approximation_completely_monotonic} presents a theoretically focused and exploratory analysis of using Chebyshev polynomials to approximate completely monotonic functions. \cite{1976_smith_decomposition_exponential_decays} discusses several potential methods, also with a focus on completely monotonic functions, with limited success, and with significant computational constraints that are not applicable in the current time. \cite{1980_evans_least_squares_exponential_sum} uses a least squares algorithm to fit completely monotonic functions, but also suffers from being computationally obsolete. It does note, however, that with a least squares approach, numerical aspects become critical, such as initialization of values or behaviour of the parameter space. We will discuss these aspects later in this work. In a slightly more modern survey, \cite{2002_holmstr_parameter_estimation_fitting_exponentials} discusses a wide array of methods for fitting exponential sums, including Prony methods, least squares approaches, and many others. None of these pay significant attention to absolutely monotonic functions.
-
-There is definitely room for further exploring whether some of these methods may be applied successfully with a focus on absolutely monotonic functions, but work would be required to adapt them. We believe that between the focus on complex exponent signals, completely monotonic functions, the differences in error measurements between fitting a slow decay function and a fast growth function, and the outdated computational considerations of some of the older pieces of work, making any of these methods work successfully on absolutely monotonic functions would not be straightforward. Moreover, the method presented in \S \ref{method} uses a least squares approach with a specific choice of representation of exponentials that improves numerical behaviour of the optimization algorithm, resulting in a very simple and relatively fast algorithm that gives significantly satisfying results. This suggests that there is no need to painfully adapt methods designed for other problems when a relatively simple one exists for this problem. It would, however, be interesting to verify this with an actual comparison.
-
-\subsection{Fitting monotonic and convex functions}
-
-The methods discussed in \S \ref{exponential_sums} are parametric or semi-parametric, using a predetermined family of functions and fitting using parameterizations. This ensures certain properties of the resulting fit by construction (complete monotonicity, periodic behaviour, etc). Another family of work focuses instead on fitting the data accurately while imposing the desired properties in less constructive ways. Specifically, we are talking about the wide range of work on fitting monotonic or convex functions in general.\\
-
-Absolute monotonicity is a particular case of convexity, which is a particular case of monotonicity. Absolute monotonicity is a stronger constraint. Two important questions deserve to be explored. First, can methods to fit monotone or convex functions be extended to absolute monotonicity constraints? Second, since absolutely monotonic functions are convex, can methods constrainted to absolutely monotonic functions be used when the target constraint is weaker (convexity)?\\
-
-All or most of the work in this area expresses the fit as an optimization problem (e.g. linear programming), that minimizes the error, and uses additional constraints on the optimization problem and/or steps in the algorithm to ensure the monotonicity/convexity of the result. They are all heavily focused on local properties of the functions and how to encode the constraints in this way, e.g. by looking at properties of derivatives/gradients/jacobians/hessian matrices.
-
-We found two major families of research. First, work on imposing monotonicity constraints to splines. Second, fitting convex functions in a multivariate context.\\
-
-A {\emph{spline}} is a smooth piecewise polynomial. Spline interpolation is widely used because it is simple, very efficient, and produces smooth satisfying results for interpolation. However, while splines are smooth by design, imposing monotonicity in them is not easy. Work like \cite{1998_he_monotone_spline,2004_zhang_monotone_splines, 2013_nagahara_monotone_splines_linear, 2015_lu_spline_monotonic_regression} considers a candidate spline interpolation, and defines a linear programming problem that minimizes its error with respect to the data. It then introduces the monotonicity constraint as additional constraints on the linear program. The results are satisfying but limited, because imposing monotonicity on splines can severely affect their ability to adequately approximate the data, or the constraints may not be strict and may result in functions that are not monotonic at every point. Moreover, extending this to absolutely monotonic functions seems extremely hard, since new ways of representing the constraints on all derivatives of absolutely monotonic functions in a linear program would need to be devised, without significantly affecting the computational and approximation properties of the resulting algorithm.\\
-
-Work like \cite{2013_hannah_multivariate_convex_regression} considers the more general problem of fitting convex multivariate functions to data. Particularly due to the multivariate nature, this problem is significantly more complicated. Various techniques are used to balance the convexity constraints with the goal of a good fit to the data. For example, \cite{2005_lachand_minimizing_convex_bodies} uses a projection step as part of a gradient descent algorithm to ensure the solutions are convex, while \cite{2008_aguilera_approximating_optimization_convex_functions} focuses on finding local characterizations of convexity and discretization of the hessian matrix of the target function, to ensure the convexity of the solution. These solutions are significantly computationally expensive, and struggle with balancing difficult constraints in a large solution space, due to their multivariate nature. Moreover, while convex but not absolutely monotonic functions are more rare, the application space is still more limited than our target problem.
-
-It might be worth comparing the performance, in computational cost and goodness of fit, of these solutions to our proposed method for the problems in which they overlap (monotonic and convex functions). We expect these will be more cost for worse fit.\\
-
-\subsection{Why absolutely monotonic functions}
-
-Monotonic and convex functions are much more general than absolutely monotonic functions. Similarly, exponential sums appear in signal and frequency analysis, and completely monotonic functions can be relevant in economic modeling. These applications, and the lack of a comparatively as significant volume of applications for absolutely monotonic functions, explain the differences in the volume of work devoted to them. Why, then, do we want to fit absolutely monotonic functions? While this paper is focused on the method, we arrived at this problem from an applied setting. We wanted to use data to fit reward functions (for players in a video game). Absolute monotonicity is an extremely attractive constraint for a reward function, as it ensures not only that better results produce better rewards, but also that the returns increase, as it is often informally said, {\emph{exponentially}}, or more accurately, absolutely monotonically. This means that the same comparative improvement in performance will always result in a larger improvement (and a faster increase in this improvement, and a faster increase on the speed of this improvement, etc.) on the reward the higher the performance already is. In other words, small differences become much more noticeable near the top, which is very attractive for reward functions, for example in a competitive setting. Another way to look at this is that an absolutely monotonic function is a way to re-scale a performance value into a reward space that is ``exponential'', greatly accentuating differences at higher performance value while giving less relevance to differences at lower performance values.\\
-
-Naturally, convex functions are often enough to represent this type of behaviour. While we have not thoroughly explored the economics literature in search for uses of convex functions, we conjecture that there might be some applications in economics in which convex functions are expected, that would benefit from using absolutely monotonic functions instead, by giving them stronger reward behaviours. Moreover, the method discussed in \S \ref{method} is simple, fast, and successful enough that it might be used in place of other methods focused on convexity.\\
-
-As a whole, we believe that any real-world modeling of a function that benefits from consistently accentuating differences at higher values, but fit this function using existing data, such as reward functions, could benefit from imposing an absolute monotonicity constraint on the result and using the fitting method described in this paper.
-
-\subsection{Summary}
-
-In the field of mathematical analysis there is a significant theoretical understanding of absolutely monotonic functions, completely monotonic functions, exponential sums in general, and other related families of functions. At the same time, several methods of fitting some families of exponential sums to data exist, coming primarily from the signal analysis world. This applied work often does not use the existing theoretical results to their full extent, and sometimes fails to recognize the connection between the different families of exponential sums and their properties. At the same time, another significant research field studies algorithms to fit monotonic and convex functions, without acknowledging their relation to absolutely monotonic functions, and therefore exponential sums, and therefore not attempting (semi-)parameteric approaches to this problem, that could benefit from easier to fulfill constraints, and better computational performance and fitness.\\
-
-In the remainder of this paper we discuss our proposed, simple method for fitting absolutely monotonic functions that sits in the middle of all of this, and that could help as an initial step towards briding these gaps. Regardless of this new method, we believe it would be in the best interest of researchers in each of these fields to explore the results in each other's fields and consider how they might improve their approaches or reconsider some assumptions or choices that they make.
-
-\section{Method}
-\label{method}
-
-In this section we describe the method that we use to solve the following problem:
-
-\begin{problem}
-Given a set of data points $\mathcal{D} = \{(x_i,y_i)\}$, we wish to fit an absolutely monotonic function $f$ to minimize the error between the $\{y_i\}$ and $\{f(x_i)\}$.
-\end{problem}
-
-Note that we do not prescribe the measure of error in the general definition of the problem, as that can be arbitary. We also are not looking at the strict definition of {\emph{minimize}} but rather a best effort approach to it. In general, this is the larger problem we are trying to address.
-
-However, in this work we use a semi-parametric least squares optimization, which means that we are minimizing the mean squared error, and we use an iterative method to find a best effort solution within a prescribed family of functions. Further details are described in the remainder of this section. This is a consequence of our chosen method.
-
-\subsection{Domain}
-
-Since the data $\mathcal{D}$ is finite, there will be bounds on the $\{x_i\}$
-\begin{equation}
-\begin{array}{l}
-a = \min x_i\\
-b = \max x_i\\
-\end{array}
-\end{equation}
-
-Therefore, we can safely constrain ourselves to absolutely monotonic functions $f: [a,b] \rightarrow f([a, b])]$. Moreover, we can reduce the problem to absolutely monotonic functions $\bar{f}: [0,1] \rightarrow f([a,b])$ through a simple affine transformation. By transforming the $\{x_i\}$ into $\{\bar{x_i} = {{x_i - a} \over {b - a}}\}$, if we have a solution $\bar{f}: [0,1] \rightarrow f([a,b])$ for the problem associated to $\{\bar{x_i}\}$, we can define
-
-\begin{equation}
-f(x) = \bar{f}({{x - a} \over {b - a}})
-\end{equation}
-
-\noindent and we have:
-
-\begin{equation}
-\begin{array}{l}
-f(a) = \bar{f}({{a-a} \over {b-a}}) = \bar{f}(0)\\
-f(b) = \bar{f}({{b-a} \over {b-a}}) = \bar{f}(1)\\
-\end{array}
-\end{equation}
-
-\noindent (correspondence of bounds)
-
-\begin{equation}
-{f(x_i)} = \bar{f}({{x_i - a} \over {b-a}}) = \bar{f}(\bar{x_i})\\
-\end{equation}
-
-\noindent (correspondence of data points)
-
-\begin{equation}
-\nderiv{f}{n}(x) = {({{1} \over {b - a}})}^n {\nderiv{\bar{f}}{n}} ({{x -a} \over {b-a}})\\
-\end{equation}
-
-\noindent ($f$ is absolutely monotonic if and only if $\bar{f}$ is absolutely monotonic, since $b \geq x \geq a$.\\
-
-Therefore, for the remainder of this work, we only consider the problem of fitting absolutely monotonic functions $f: [0,1] \rightarrow f([0,1])$ with all data points such that $x_i \in [0,1]$.
-
-\subsection{Unit exponentials}
-
-One of the key novel insights of this work is the definition of what we call {\emph{unit exponentials}}. Unit exponentials are rescalings of exponential functions with positive exponents designed to have more regular numerical behaviours that make them both easier to understand in the context of absolutely monotonic fitting, and improve the computational properties of the fitting algorithm.\\
-
-\begin{definition}[Unit exponentials]
-We define the parametric {\emph{unit exponentials}} family of absolutely monotonic functions, with parameter $t > 0$:
-\begin{equation}
-\uexp{t}(x) = {{e^{tx} - 1} \over {e^t - 1}}
-\end{equation}
-\end{definition}
+Different maps do not just have different difficulties, but also different difficulty {\emph{curves}}, with the difficulty accumulating at different relative ranges of the score spectrum, while always preserving the diminishing returns nature. The problem of finding adequate reward curves for each map is difficult and highly sought-after by the Beat Saber ranked community. Shape-constrained fitting from player scores is a valuable tool in this context. Naturally, a higher score should always give a higher reward (often quantified as Performance Points (PP)), introducing a growing constraint on the reward curve. Moreover, the diminishing returns nature justifies introducing further growth constraints that increase the rate at which the rewards increase. While convexity constraints could be used, there are growing convex curves that do not adequately reflect the ever increasingly difficult nature of approaching 100\% score in Beat Saber maps (see, for example, figure \ref{convex_not_am}). Therefore, we instead consider the more constraining problem of fitting smooth absolutely monotonic curves from sample scores.\\
 
 \begin{figure}
-\caption{\label{fig_unit_exponentials}Some unit exponentials}
+\caption{\label{convex_not_am}Smooth piecewise polynomial that is growing and convex but not absolutely monotonic}
 \centering
-\includegraphics[width=\textwidth]{unit_exponentials.png}
+\includegraphics[width=0.75\textwidth]{convex_not_am.png}
 \end{figure}
 
-The most immediate advantage of unit exponentials is that they are all pinned to the $[0,1]$ interval:
+\subsection{Problem statement}
 
+As discussed, we consider the problem of, given a random {\bf{sample}} of an unknown single variable {\bf{real valued}} function in a {\bf{bounded interval}}, finding {\bf{absolutely monotonic}} functions that best approximate the data. We will, however, compare with some methods that only guarantee convex functions due to their prominence and to understand the relative advantages and disadvantages of them.
+
+We presume noise in the data. In the Beat Saber map context, the x axis indicates the score obtained in the map by the player, and the y axis indicates the reward associated with it, which in the data is represented by the quantified player skill of the player that produced the score. The player skill of a player in a ranked setting represents {\emph{their best possible performance}}, meaning that better players can sometimes produce worse scores (if not taking the map seriously, being unlucky, or having less than ideal circumstances), but it is far more unlikely that a player will produce a score above their skill level. Therefore, we presume noise in the data will have a strong positive bias. In other words, our estimation should ideally {\bf{lowball}} the data. In order to achieve this, we use asymmetric loss functions in our methods. We consider two different asymmetric loss functions: 
+
+\begin{enumerate}
+\item Pinball loss
 \begin{equation}
-\begin{array}{l}
-\uexp{t}(0) = {{e^0 -1} \over {e^t - 1}} = 0\\
-\uexp{t}(1) = {{e^t -1} \over {e^t - 1}} = 1\\
+\begin{array}{lll}
+l_1(r) =& \tau r &\text{if } r \geq 0\\
+& (\tau-1)r &\text{if } r < 0\\
 \end{array}
 \end{equation}
-
-This makes them extremely convenient for the problem of fitting absolutely monotonic functions $f:[0,1] \rightarrow [0,1]$. We note that $\lim\limits_{t \to 0} \uexp{t}(x) = x$, and so we can smoothly extend the definition to $\uexp{0}(x) = x$\\
-
-However, their attractiveness only begins here. One of the most interesting properties of unit expontentials is that their value for any $x \in [0,1]$ always corresponds to the proportion of the total growth between $0$ and $1$ that {\emph{all}} of its derivatives have manifested between $0$ and $x$:
-
-\begin{theorem}
-For every $t > 0$, every $n \geq 0$, and every $x \in [0,1]$.
+\item Soft floor
 \begin{equation}
-{{\nderiv{\uexp{t}}{n}(x) - \nderiv{\uexp{t}}{n}(0)} \over {\nderiv{\uexp{t}}{n}(1) - \nderiv{\uexp{t}}{n}(0)}} = \uexp{t}(x)
+l_2(r) = |r| + e^{-r}
 \end{equation}
-\end{theorem}
+\end{enumerate}
 
-While unit exponentials always go between 0 and 1, their derivatives do not necessarily do so. They are always greater than $0$ at $0$ and grow to very high values near $1$, with no bound for unbounded $t$. However, the theorem establishes a link between the function itself and how fast {\bf{all}} of the derivatives grow, displaying a very significant and regular coordination among all derivatives for unit exponentials.\\
+Problem statement as absolutely monotonic, lowballing, noisy, (semi-)parametric. Discuss convexity. Discuss loss function (two versions, the one I end up using, and the one for convex optimization).
+Summary of the rest of the document. State that we develop a method and compare it with others.
 
-There are two useful lemmas that we will use to prove this theorem among other things.
+\section{Potential approaches}
 
-\begin{lemma}
-For every $t > 0$ and $n > 0$,
-\begin{equation}
-\nderiv{\uexp{t}}{n}(x) = {{t^n e^{tx}} \over {e^t - 1}}
-\end{equation}
-\end{lemma}
+Describe potential ways to solve the problem, both feasible and infeasible, introducing the theory behind them.
 
-\begin{proof}
-This is a simple inductive application of the derivation of $\uexp{t}(x) = {{e^{tx} - 1} \over {e^t - 1}}$.
-\end{proof}
+Exponential sums - Laplace transform, Bernstein theorem, relation between completely monotonic and absolutely monotonic functions.
+Exponential sums - Absolutely monotonic functions in bounded domains are not always exponential sums.
+Exponential sums - Prony methods.
+Exponential sums - Least squares.
+Exponential sums - other approaches.
 
-\begin{lemma}
-For every $t > 0$ and $n > 0$,
-\begin{equation}
-\begin{array}{l}
-\nderiv{\uexp{t}}{n}(0) = {{t^n} \over {e^t - 1}}\\
-\nderiv{\uexp{t}}{n}(1) = {{t^n e^t} \over {e^t - 1}}\\
-\nderiv{\uexp{t}}{n}(1) - \nderiv{\uexp{t}}{n}(0) = t^n\\
-\end{array}
-\end{equation}
-\end{lemma}
+Piecewise interpolation
 
-\begin{proof}
-The first two lines are a direct application of the previous lemma, but we will write the derivation of the last line explicitly, as it is the most interesting part of this lemma, providing a direct expression for the range of the $n$-th derivative of $\uexp{t}$ depending cleanly on $t$.
+Polynomial interpolation - Full representation of analytical functions.
+Polynomial interpolation - Spectral methods infeasible.
+Polynomial interpolation - Least squares using Vandermonde matrix.
+Polynomial interpolation - Convex optimization of splines under loss.
+Polynomial interpolation - Greedy lowballing monomial sum.
 
-\begin{equation}
-\nderiv{\uexp{t}}{n}(1) - \nderiv{\uexp{t}}{n}(0) =  {{t^n e^t} \over {e^t - 1}} - {{t^n} \over {e^t - 1}} = {{t^n (e^t - 1)} \over {e^t -1}} = t^n
-\end{equation}
-\end{proof}
+\section{Evaluation}
 
-Note that his last line also holds for $n = 0$, that is, it is also the case that $\uexp{t}(1) - \uexp{t}(0) = t^0 = 1$.
+Discuss functions that are being tested, evaluation set up.
 
-We are now in a position to prove the theorem.
+\section{Results and discussion}
+Show different functions and discuss pros and cons.
 
-\begin{proof}[(Proof of the theorem)]
-We first note that for $n = 0$ the theorem is trivial since $\uexp{t}(0) = 0$ and $\uexp{t}(1) - \uexp{t}(0) = 1$, so it follows directly from the equation.
-
-\begin{equation}
-{{\uexp{t}(x) - \uexp{t}(0)} \over {\uexp{t}(1) - \uexp{t}(0)}} = {{\uexp{t}(x) - 0} \over {1}} = \uexp{t}(x)
-\end{equation}
-
-For $n > 0$, we begin by simplifying the denominator to $t^n$ as per the lemma,
-
-\begin{equation}
-{{\nderiv{\uexp{t}}{n}(x) - \nderiv{\uexp{t}}{n}(0)} \over {\nderiv{\uexp{t}}{n}(1) - \nderiv{\uexp{t}}{n}(0)}} = {{\nderiv{\uexp{t}}{n}(x) - \nderiv{\uexp{t}}{n}(0)} \over {t^n}}
-\end{equation}
-
-We can then replace the two values in the numerator,
-
-\begin{multline}
-{{\nderiv{\uexp{t}}{n}(x) - \nderiv{\uexp{t}}{n}(0)} \over {t^n}} = {{1} \over {t^n}} \cdot ({{t^n e^{tx}} \over {e^t - 1}} - {{t^n} \over {e^t - 1}}) = \\
-= {{1} \over {t^n}} \cdot {{t^n (e^{tx} - 1)} \over {e^t - 1}} = {{e^{tx} - 1} \over {e^t - 1}} = \uexp{t}(x)\\
-\end{multline}
-\end{proof}
-
-By the middle point theorem, for any $t > 0$, there will always be a point $x_1(t) \in [0,1]$ where the first derivative of $\uexp{t}$ will be exactly 1. We will call this the {\emph{exploding point}} of $\uexp{t}$. All unit exponentials go underneath the straight line $\uexp{0}(x) = x$, with lower initial first derivative and higher final first derivative the higher the $t$. At some point, the first derivative will be exactly $1$, which can be identified to be as the point in which the unit exponential ``kicks off'' and begins its exponential growth. The location of the exploding point with respect to $t$ is interesting as it approximately separates the area where the unit exponential is flat and where it is steep. This point will always be $x_1(t) \geq 0.5$ for $t > 0$, and will get progressively closer to $1$ as $t$ increases. See figure \ref{fig_exploding_points} for a visualization of the exploding points of various unit exponentials.
-
-It is, in fact, more interesting or useful to consider instead the distance between $x_1(t)$ and $1$. Write $1 - {\bar{x}}_1(t) = x_1(t)$. We can calculate this value analytically:
-
-\begin{multline}
-\uexp{t}^{\prime}(x_1(t)) = \uexp{t}^{\prime}(1 - {\bar{x}}_1(t)) = {{t e^{t (1 - {\bar{x}}_1(t))}} \over {e^t - 1}} = 1\\
-t e^{t (1 - {\bar{x}}_1(t))} = e^t - 1\\
-\ln t + t (1 - {\bar{x}}_1(t)) = \ln (e^t - 1)\\
-1 - {\bar{x}}_1(t) = {{\ln (e^t - 1) - \ln t} \over {t}}\\
-{\bar{x}}_1(t) = {{t + \ln t - \ln (e^t - 1)} \over {t}}\\
-\end{multline}
-
-\begin{figure}
-\caption{\label{fig_exploding_points}Exploding points}
-\centering
-\includegraphics[width=\textwidth]{exploding_points.png}
-\end{figure}
-
-An interesting way to think about this gap between the exploding point and $1$ is to see how it changes when we multiply $t$ by a constant $k > 1$. Therefore, we can compare ${\bar{x}}_1(t)$ with ${\bar{x}}_1(kt)$. The latter will be smaller, as a larger $t$ moves the exploding point closer to $1$, but by how much? For large enough $t$, multiplying $t$ by $k > 1$ reduces the gap between the exploding point and $1$ to approximately $1/k$. That is, ${{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} \simeq k$. This is very useful in the implementation of an iterative process to find a semiparametric fitting of an absolutely monotonic function as a sum of unit exponentials, as we can use a multiplying factor $k$ to obtain meaningful variation in the parameters of the unit exponentials that are independent of the current values of $t$ (see \S \ref{least_squares}).\\
-
-We can show this numerically by plotting ${{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}}$ for various values of $k$. See figure \ref{fig_exploding_point_evolution}. Note that the convergence is notoriously slow (logarithmic), but it stabilises relatively quickly in a relatively constant range. It can be proven to be exactly $k$ in the limit (though this is not very useful because we will not use such large $t$).
-
-\begin{figure}
-\caption{\label{fig_exploding_point_evolution}Exploding point change when multiplying}
-\centering
-\includegraphics[width=\textwidth]{exploding_point_evolution.png}
-\end{figure}
-
-\begin{theorem}
-\begin{equation}
-\lim_{t \rightarrow \infty} {{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} = k
-\end{equation}
-\end{theorem}
-
-\begin{proof}
-First note that
-
-\begin{equation}
-t - \ln(e^t - 1) = t - \ln(e^t(1 - e^{-t})) = t - t - \ln(1 - e^{-t}) = - \ln(1-e^{-t})
-\end{equation}
-
-With this in mind, simplify the original quotient.
-
-\begin{multline}
-{{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} = {{t + \ln t - \ln(e^t - 1)} \over {kt + \ln kt - \ln(e^{kt} - 1)}} \cdot {{kt} \over {t}} =\\
-k \cdot {{\ln t - \ln(1-e^{-t})} \over {\ln kt - \ln(1-e^{-kt})}} = k \cdot {{\ln t - \ln(1-e^{-t})} \over {\ln k + \ln t - \ln(1-e^{-kt})}}\\
-\end{multline}
-
-The latter terms go to 0 as $t \rightarrow \infty$, and so we have
-
-\begin{equation}
-\lim_{t \rightarrow \infty} {{{\bar{x}}_1(t)} \over {{\bar{x}}_1(kt)}} = \lim_{t \rightarrow \infty} k \cdot {{\ln t} \over {\ln k + \ln t}} = k \cdot 1 = k
-\end{equation}
-\end{proof}
-
-One last but critical element to explain how we use unit exponentials to fit absolutely monotonic functions is to show how the Bernstein theorem (theorem \ref{bernstein_theorem}) applies to them.
-
-\begin{theorem}
-Let $\realfunction{f}{[0,1]}$ be an absolutely monotonic function. Then, there is a non-negative finite Borel measure $\mu$ such that
-\begin{equation}
-f(x) - f(0) = \int_{0}^{\infty} \uexp{t}(x) d \mu(t)
-\end{equation}
-
-\noindent for every $x \in [0,1]$
-\end{theorem}
-
-\begin{proof}
-Start from Bernstein's theorem. Then there exists a non-negative finite Borel measure $\mu$ such that $f(x) = \int_{0}^{\infty} e^{tx} d \mu(t)$. But then,
-
-\begin{multline}
-f(x) = \int_{0}^{\infty} e^{tx} d \mu(t) = \int_{0}^{\infty} (e^{tx} - 1 + 1) d \mu(t) = \int_{0}^{\infty} (e^{tx} - 1) d \mu(t) + \int_{0}^{\infty} 1 d \mu(t) =\\
-= \int_{0}^{\infty} (e^t - 1) {{e^{tx} - 1} \over {e^t - 1}} d \mu(t) + \int_{0}^{\infty} 1 d \mu(t)\\
-\end{multline}
-
-Since $e^t - 1$ is non-negative and integrable, we can define the non-negative finite Borel measure $d \nu(t) = (e^t - 1) d \mu(t)$ that is absolutely continuous with respect to $\mu$, and write:
-
-\begin{equation}
-f(x) =  \int_{0}^{\infty} {{e^{tx} - 1} \over {e^t - 1}} d \nu(t) + \int_{0}^{\infty} 1 d \mu(t) = \int_{0}^{\infty} \uexp{t}(x) d \nu(t) + \int_{0}^{\infty} 1 d \mu(t)
-\end{equation}
-
-Now consider 
-\begin{equation}
-f(0) =  \int_{0}^{\infty} \uexp{t}(0) d \nu(t) + \int_{0}^{\infty} 1 d \mu(t) = 0 + \int_{0}^{\infty} 1 d \mu(t) = \int_{0}^{\infty} 1 d \mu(t)
-\end{equation}
-
-\noindent and so
-
-\begin{equation}
-f(x) - f(0) = \int_{0}^{\infty} \uexp{t}(x) d \nu(t) + \int_{0}^{\infty} 1 d \mu(t) - \int_{0}^{\infty} 1 d \mu(t) = \int_{0}^{\infty} \uexp{t}(x) d \nu(t)
-\end{equation}
-\end{proof}
-
-We can therefore attempt to approximate any absolutely monotonic function $f$ for which $f(0) = 0$ with a finite weighted sum of unit exponentials. Our goal now becomes, given the normalized dataset $\mathcal{D}$ with all x values in $[0,1]$, find a finite weighted sum of unit exponentials that explains the values in $\mathcal{D}$ as well as possible. By construction, this finite weighted sum will be absolutely monotonic, and because of the theorem, we know that if we use a large enough number of well selected unit exponentials, we should be able to approximate the values as well as any absolutely monotonic function could.
-
-\subsection{Least squares optimization}
-\label{least_squares}
-
-In this section we present a simple parametric method to fit a positive sum of unit exponentials $\sum \uexp{t_i}$ to $\mathcal{D}$. We predefine the number of unit exponentials we will use $n$, but allow flexibility in both the weight $w_i$ of each of them, and their parameters $t_i$. This creates a parameter space of size $2n$ that we can search using nonlinear least squares.
-
-However, it is not reasonable to fit the $t_i$ directly using nonlinear least squares, due to the difference in result becoming smaller with the same difference in the $t_i$ the larger the $t_i$ are, which also means the upper bounds for the $t_i$ parameters would need to be very high for high representation power. For example, $\uexp{100}$ and $\uexp{101}$ are much more similar between them than $\uexp{2}$ and $\uexp{1}$ are. Moreover, if the $t_i$ are each left to freely roam the entire parameter space, they may overlap or close to overlap with other $t_i$, which in turn generates redundancy in the parameter space. For example, $2 \uexp{2}$ is the same as $1 \uexp{2} + 1 \uexp{2}$ (same parameter chosen twice), or very similar to $1.3 \uexp{2.1} + 0.7 \uexp{1.9}$. In other words, using the $t_i$ directly for a nonlinear least squares optimization is ineffective.\\
-
-Instead, we use the property, described earlier, that multiplying a $t_i$ by a factor $k$ approximately reduces the distance of the exploding point from $1$ by $1/k$, to use these factors as parametes instead. Specifically, we define the set of parameters $\{k_i\} \subset (k_{\downarrow},k^{\uparrow})$ and initial $k_0 \in (0,k^{\uparrow})$ for some chosen hyperparameter bounds $k_{\downarrow}, k^{\uparrow}$, and
-
-\begin{equation}
-t_i = \prod_{j=0}^{i-1} k_j
-\end{equation}
-
-For example, the parameters $\{k_0 = 0.5, k_1 = 3, k_2 = 5, k_3 = 2\}$ results in $\{t_1 = 0.5, t_2 = 1.5, t_3 = 7.5, t_4 = 15\}$.
-
-This creates relative spacing between exploding points of the unit exponentials proportional to the $k_i$, while making all $k_i$ live in the same bounds $(k_{\downarrow},k^{\uparrow})$, which makes nonlinear least squares optimization more effective for fitting absolutely monotonic functions.\\
-
-In terms of the bounds for the weight parameters $w_i$, we use the property that $\uexp{t}(1) = 1$ to realize that $w_i \uexp{t}(1) = w_i$, consider the maximum $M = \max_{\mathcal{D}} \{y\}$ in the data being fitted, and allow some extra room in case the corresponding $x_i$ is far from $1$. We allow the $w_i$ to go up to $rM$, for $r \geq 1$ (e.g. $r = 3$), so that the bounds for the $w_i$ are $(0,rM)$.\\
-
-As a result, the problem can be summarized as follows:
-
-\begin{itemize}
-
-\item Input data $\mathcal{D}$ with maximum $M = \max_{\mathcal{D}} \{y\}$.
-\item Hyperparameter $n \geq 1$ (integer), the number of unit exponentials. Increasing it allows for more complex shape functions but increases the number of parameters in the optimization problem. Tested value: $n = 7$
-\item Hyperparameters $1 < k_{\downarrow} < k_{\uparrow}$ (real), the bounds of the proportional increase in the exponents of subsequent unit exponentials. Increasing $k_{\downarrow}$ ensures more difference between terms in the sum, while decreasing it allows more precision. Similarly, increasing $k^{\uparrow}$ allows more difference between subsequent unit exponentials, while decreasing it forces more precision. Tested values: $k_{\downarrow} = 1.25, k_{\uparrow} = 2.25$.
-\item Hyperparameter $r \geq 1$ (real), the proportion of extra room given to the weights. Increasing it allows for larger functions that might represent the data better, but increases the size of the parameter space. Tested value: $r = 3$.
-\item Parameters $\{w_i\}$ for $i = 1..n$, with each $w_i \in (0,rM)$. Tested initial value: $0.5$.
-\item Parameter $k_0 \in (0,k^{\uparrow})$. Tested initial value: $0.5$.
-\item Parameters $\{k_j\}$ for $j = 1..n-1$, with each $k_j \in (k_{\downarrow},k^{\uparrow})$. Tested initial value: $2$.
-
-\end{itemize}
-
-We use a nonlinear least squares optimization algorithm to find the $\{w_i\}$, $\{k_j\}$ that minimize the sum mean squared error 
-
-\begin{equation}
-\sum_{(x,y) \in \mathcal{D}} (y - f(x))^2
-\end{equation}
-
-\noindent where
-
-\begin{equation}
-\begin{array}{l}
-t_i = \prod\limits_{j=0}^{i-1} k_j\\
-f(x) = \sum\limits_{i=1..n} w_i \uexp{t_i}(x)\\
-\end{array}
-\end{equation}
-
-\subsection{Evaluation}
-
-In terms of evaluation metrics, because we are using nonlinear least squares and there is no statistical interpretation to our approach, the most reasonable metric is mean squared error (MSE). We normalize it for each test case to the value $f(1)$ of the fitted source function at $1$ (NMSE).\\
-
-More interestingly, there is the question of which datasets to test it on. In all cases we generate the dataset from an underlying function. We however have variation in multiple dimensions. We measure the NMSE on the same points used to fit the function, which we call fit NMSE, and then on a uniform sample of 200 points (without noise), which we call source NMSE. The difference between these two allows us to analyse to what degree the specific sampling affects the goodness of fit, with a high difference indicating that absolutely monotonic functions are too flexible, with a fit that works well for the samples but not in other parts of the support. For each test case, we run the fit $100$ times with different noise and point samples, and calculate the average and worst source NMSE.
-
-\begin{itemize}
-
-\item \itemtitle{Number of samples} In each test case we generate $N$ data points from the source function to fit the function. We try with a low ($N = 10$), medium ($N = 25$) and high ($N = 200$) sample size. It is worth noting that the sample x values are uniformly distributed in $(0,1)$. Due to the nature of absolutely monotonic functions, x values closer to $1$ are harder to fit because the functions grow more quickly near them, so uniform sampling can make the fit quality vary more depending on the specific sample.
-\item \itemtitle{Noise} It is interesting to see the effect of random noise on the method. As such, we have test cases with no random noise and with gaussian noise with standard deviation of different sizes, relative to the value of the function at $1$ (the maximum): small gaussian noise ($\sigma = 0.01 \cdot f(1)$) and high gaussian noise ($\sigma = 0.1 \cdot f(1)$). Note that with high noise, the fit NMSE can be lower than the source NMSE, as the method can compensate for the noise in the fit over multiple samples.
-\item \itemtitle{Function} We try the fit with various functions with different properties:
-\begin{itemize}
-\item \itemtitle{Absolutely monotonic functions on $(-\infty,a]$} The cases for which the method should be best suited and which should show small error.
-\begin{itemize}
-\item \itemtitle{Discrete sum of unit exponentials} The fit can potentially be exact, and any error in the result is due to the approximation method rather than the problem setup. We try with $f_1(x) = 0.3 \uexp{2.5}(x) + 2.6 \uexp{10.35}(x) + 1.24 \uexp{53.4}(x)$.
-\item \itemtitle{Hyperexponentials} Bernstein's theorem still applies to them but only up to an (arbitrary) limited interval - any fit will still fail if we extend it far enough towards positive infinity. The method should be able to fit them perfectly since our data is constrained, but the behaviour near the top of the interval might be complicated. We normalize them so that they go between $0$ and $1$ to avoid numerical errors with very large numbers. We try with $f_2(x) = {{e^{e^x} - e} \over {e^e - e}}$ as a simple case and $f_3(x) = {{e^{e^{e^x}} - e^e} \over {e^{e^e}} - e^e}$.
-\end{itemize}
-\item \itemtitle{Absolutely monotonic functions on $[0,1]$} Bernstein's theorem no longer applies to them so some error is to be expected.
-\begin{itemize}
-\item \itemtitle{Absolutely monotonic polynomials} These have a finite number of non-zero derivatives, and do not match exactly with a finite sum of unit exponentials. We try with $f_4(x) = x^2$ and $f_5(x) = x^5 + 2 x^4 + x^3 + x$.
-\end{itemize}
-\item \itemtitle{Convex functions that are not absolutely monotonic} It is interesting to evaluate how well the method works when the absolutely monotonic assumption is untrue for the underlying function, but it has a convex shape. Some error is to be expected, but we wish to evaluate how good this method can be as an approximation for convex functions.
-\begin{itemize}
-\item \itemtitle{Polynomial} We try with $f_6(x) = 3 x^2 - x^3$. This polynomial is convex in $(0,1)$ but becomes concave exactly at $1$. We also try with $f_7(x) = x^4 - 4x^3 + 6x^2$, which is convex for $x > 0$, and has a positive fourth derivative, but its third derivative is negative in $(0,1)$.
-\item \itemtitle{Trigonometric function} We try with $f_8(x) = \sin({{\pi} \over {2}} x - {{\pi} \over {2}}) + 1$, which is convex in $(0,1)$ but becomes concave exactly at $1$.
-\item \itemtitle{Piecewise function} We try with $f_9(x) = 4x^2 \{x \in [0,0.5]\} | 4x - 1 \{x \in [0.5,1]\}$. This function is convex everywhere, continuous, has a continuous first derivative, but its second derivative jumps at $0.5$ from $8$ to $0$.
-\end{itemize}
-\end{itemize}
-\end{itemize}
-
-TODO: Discussion about comparing with other libraries. Check ChatGPT discussion. It suggested cvxpy.
-
-\section{Results}
-
-\section{Conclusions}
+\section{Conclusion}
 
 \dobibliography
 
