@@ -49,9 +49,9 @@ Different maps do not just have different difficulties, but also different diffi
 
 \subsection{Problem statement}
 
-As discussed, we consider the problem of, given a random {\bf{sample}} of an unknown single variable {\bf{real valued}} function in a {\bf{bounded interval}}, finding {\bf{absolutely monotonic}} functions that best approximate the data. We will, however, compare with some methods that only guarantee convex functions due to their prominence and to understand the relative advantages and disadvantages of them.
+As discussed, we consider the problem of, given a single variable {\bf{real valued}} set of datapoints in a {\bf{bounded interval}} (we can assume $[0,1]$ without loss of generality), finding {\bf{absolutely monotonic}} functions that best approximate the data. We will, however, compare with some methods that only guarantee convex functions due to their prominence and to understand their relative advantages and disadvantages.
 
-We presume noise in the data. In the Beat Saber map context, the x axis indicates the score obtained in the map by the player, and the y axis indicates the reward associated with it, which in the data is represented by the quantified player skill of the player that produced the score. The player skill of a player in a ranked setting represents {\emph{their best possible performance}}, meaning that better players can sometimes produce worse scores (if not taking the map seriously, being unlucky, or having less than ideal circumstances), but it is far more unlikely that a player will produce a score above their skill level. Therefore, we presume noise in the data will have a strong positive bias. In other words, our estimation should ideally {\bf{lowball}} the data. In order to achieve this, we use asymmetric loss functions in our methods. We consider two different asymmetric loss functions: 
+We presume noise in the data. In the Beat Saber map context, the x axis indicates the score obtained in the map by the player, and the y axis indicates the reward associated with it, which in the data is represented by the quantified player skill of the player that produced the score. The player skill of a player in a ranked setting represents {\emph{their best possible performance}}, meaning that better players can sometimes produce worse scores (if not taking the map seriously, being unlucky, or having less than ideal circumstances), but it is far more unlikely that a player will produce a score above their skill level. Therefore, we presume noise in the data will have a strong positive bias (the skill of the player is higher than this score in this map would suggest). In other words, our estimation should ideally favour functions that {\bf{underestimate}} the data while being as accurate as possible. In order to achieve this, we use asymmetric loss functions in our methods. We consider two different asymmetric loss functions: 
 
 \begin{enumerate}
 \item Pinball loss
@@ -67,35 +67,87 @@ l_2(r) = |r| + e^{-r}
 \end{equation}
 \end{enumerate}
 
-Problem statement as absolutely monotonic, lowballing, noisy, (semi-)parametric. Discuss convexity. Discuss loss function (two versions, the one I end up using, and the one for convex optimization).
-Summary of the rest of the document. State that we develop a method and compare it with others.
+One final aspect to consider is how we will use the resulting estimations. Our goal is to use real score data to learn how to best describe the reward curves of different maps. The results of this could then be used to train a different model that looks at the map gameplay properties themselves to estimate those parameters without needing scores. This is useful for newly ranked maps that do not have enough scores yet but need a reward curve. Therefore, we are aiming for a {\bf{(semi-)parametric}} method that can output a bounded and small number of parameters that represents the fitted curve.\\
+
+We can summarize these properties in a single problem statement. The problem statement leaves some room for variability to consider the different approaches' advantages and disadvantages.
+
+\begin{problem}
+Given a set of real valued datapoints $\{x_i,y_i\}$, where $x_i \in [0,1]$, find a function $f \in \mathcal{C}^{\infty}([0,1])$ that:
+\begin{itemize}
+\item is absolutely monotonic in $[0,1]$.
+\item approximates the datapoints as best as possible with a preference for underestimation.
+\item can be represented (semi-)parametrically with a bounded, low number of parameters.
+\end{itemize}
+\end{problem}
+
+The remainder of this document discusses several potential approaches to solving this problem (or slightly relaxed versions of it), discussing their advantages and disadvantages. We also introduce a novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF), specifically tailored for this problem. We implemented and compared some of these approaches.
+
+Section \ref{approaches} explains the approaches, with their pros and cons, including the implementation of those that were implemented. Section \ref{evaluation} presents the evaluation set up for the comparison of the implemented approaches. Section \ref{results} discusses the results of the evaluation and general discussion on how different methods compare. Section \ref{conclusion} presents the conclusions from this paper.
 
 \section{Potential approaches}
+\label{approaches}
 
-Describe potential ways to solve the problem, both feasible and infeasible, introducing the theory behind them.
+\subsection{Positive sums of positive exponentials}
+\label{exponential_sums}
 
-Exponential sums - Laplace transform, Bernstein theorem, relation between completely monotonic and absolutely monotonic functions.
-Exponential sums - Absolutely monotonic functions in bounded domains are not always exponential sums.
-Exponential sums - Prony methods.
-Exponential sums - Least squares.
-Exponential sums - other approaches.
+Exponential functions with positive exponents are always absolutely monotonic. A deeply related family of functions are {\emph{completely monotonic functions}}, which are functions with alternating sign derivatives. It is easy to see that $f(x)$ is absolutely monotonic in $(a,b)$ if and only if $f(-x)$ is completely monotonic in $(-a,-b)$. Moreover, Bernstein's theorem characterizes all completely monotonic functions on $[0,+\infty)$, and consequently also all absolutely monotonic functions in $(-\infty,0]$:
+
+\begin{theorem}[\cite{1929_bernstein_absolutely_monotonic}]
+Let $f \in \mathcal{C}^{\infty}([0,+\infty))$.
+Then, $f$ is completely monotonic if and only if it is the Laplace transform of a non-negative finite Borel measure $\mu$. Explicitly:
+\begin{equation}
+f(x) = \int_0^{\infty} e^{-tx}d\mu(t)
+\end{equation}
+\end{theorem}
+
+\noindent or, rephrasing it for absolutely monotonic functions:
+
+\begin{theorem}[\cite{1929_bernstein_absolutely_monotonic}]
+Let $f \in \mathcal{C}^{\infty}((-\infty,0])$.
+Then, $f$ is absolutely monotonic if and only if there is a non-negative finite Borel measure $\mu$ such that:
+\begin{equation}
+f(x) = \int_0^{\infty} e^{tx}d\mu(t)
+\end{equation}
+\end{theorem}
+
+In a few words, any absolutely monotonic function in $(-\infty,0]$ can be uniquely characterised as an infinite positive sum of exponentials with positive exponents. This also forces $f$ to be analytic because the representation is analytic. The mathematical theory of completely monotonic, absolutely monotonic, and related families of functions is much broader and deeper than what we discuss or use in this paper\cite{2014_koumandos_completely_monotonic}.
+
+This is obviously interesting from the point of view of attempting semi-parametric fitting of absolutely monotonic functions: if a function can be expressed as a sum of exponentials, can we select the most significant exponents in this sum to estimate the function? There is one important initial problem with this approach: it only applies to functions that are absolutely monotonic on all of $(-\infty,0]$. Many absolutely monotonic functions in $[0,1]$ cannot be extended analytically to $(-\infty,0]$, and therefore do not admit an exponential sum representation. A simple example of this is monomials $f(x) = x^n$. All of these are absolutely monotonic (and, in fact, analytic) in $[0,1]$, but cannot be extended to an absolutely monotonic function on $(-\infty,0]$, and cannot be represented as sums of exponentials.
+
+When attempting to use sums of exponentials to fit datapoints to absolutely monotonic functions, this severely limits the representation power. Nonetheless, should we accept this limitation, there is extensive literature on the subject of fitting exponential sums.\\
+
+Prony's method relies on sampling at specific intervals to exploit the structure of an exponential sum\cite{2002_holmstr_parameter_estimation_fitting_exponentials, 2021_keller_prony_methods,2020_chunaev_data_fitting_exponential_sums}. This is an effective method for calculating transforms of known functions that can be sampled at prescribed intervals, but is not suitable for fitting a function to random data that does not adjust to this structure and contains noise.\\
+
+Nonlinear least squares optimization with various suitable setups can be used to approximate a set of parameters (both coefficients and exponents) for an exponential sum that minimizes loss on the datapoints\cite{2002_holmstr_parameter_estimation_fitting_exponentials,1980_evans_least_squares_exponential_sum}. This presents challenges such as convergence to local optima (particularly for unusual loss functions), high reliance on the parameterization choice, complex and unpredictable effects of noise in the data, the requirement for the loss function to be smooth, and poor computational scalability to higher number of parameters. It is nonetheless a feasible option for datapoints that can be approximated using exponential sums.\\
+
+A number of other approaches and variations on the aforementioned approaches for fitting exponential sums exist. All of these share some of the challenges discussed, especially the need for specific sampling, sensitivity to noise, convergence to local optima, and computational issues. For example, \cite{1976_smith_decomposition_exponential_decays}, is outdated, computationally problematic, shows mixed results, and most importantly, requires admitting negative coefficients, losing absolute monotonicity. \cite{2002_holmstr_parameter_estimation_fitting_exponentials} discusses a wide range of methods for fitting exponential sums. It is possible that the novel greedy lowballing polynomial method introduced in \S \ref{polynomials} can be used with exponential sums as well, but it would incur the aforementioned representation limitation and thus this was not explored.\\
+
+\subsection{Piecewise interpolation}
+\label{piecewise_interpolation}
 
 Piecewise interpolation
+
+\subsection{Polynomials}
+\label{polynomials}
 
 Polynomial interpolation - Full representation of analytical functions.
 Polynomial interpolation - Spectral methods infeasible.
 Polynomial interpolation - Least squares using Vandermonde matrix.
 Polynomial interpolation - Convex optimization of splines under loss.
+
 Polynomial interpolation - Greedy lowballing monomial sum.
 
 \section{Evaluation}
+\label{evaluation}
 
 Discuss functions that are being tested, evaluation set up.
 
 \section{Results and discussion}
+\label{results}
 Show different functions and discuss pros and cons.
 
 \section{Conclusion}
+\label{conclusion}
 
 \dobibliography
 
