@@ -29,8 +29,9 @@
 
 \maketitle
 
-This is the abstract.
+We discuss the problem of fitting absolutely monotonic functions to noisy random samples in bounded intervals. This specific shape-constrained estimation problem has not been significantly explored in the literature, though it is related to other kinds of shape-constrained estimation such as fitting exponential sums or convex polynomial fitting. A wide variety of potential approaches applicable to the problem are discussed, including various forms of exponential sum fitting, using Bernstein polynomial bases or splines in constrained optimization problems, and non-linear least squares optimization with Vandermonde matrices. A novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF) is also introduced. This method finds monomial terms to iteratively approximate the sampled data from below (lowballing), ensuring absolute monotonicity by construction and robustness to a variety of function shapes. However, it lacks general optimality and occasionally underestimates certain regions of the sample. A few of the most promising methods were implemented and compared on generated samples from a wide variety of absolutely monotonic and convex functions. While convex splines displayed the best results in cases where low degree polynomials were sufficient, GLAMPF was the most robust approach with the strongest guarantees and produced acceptable results in every test case.
 
+\pagebreak
 \tableofcontents
 
 \section{Introduction}
@@ -60,6 +61,7 @@ Absolutely monotonic shape-constrained estimation from fixed samples has not bee
 In \S \ref{approaches} we discuss many potential approaches to the motivating problem in detail, highlighting this tension between less constrained methods that do not guarantee absolute monotonicity, and methods that do guarantee absolute monotonicity but are not very well suited for fitting from random samples.
 
 \subsection{Problem statement}
+\label{problem_statement}
 
 Given a single variable {\bf{real valued}} set of datapoints in a {\bf{bounded interval}} (we can assume $[0,1]$ without loss of generality), we consider the problem of finding {\bf{absolutely monotonic}} functions that best approximate the data. We will, however, compare with some methods that only guarantee convexity due to their prominence and to understand their relative advantages and disadvantages.
 
@@ -252,7 +254,7 @@ Non-linear least squares exponential sums and Vandermonde interpolation with pos
 \section{Evaluation}
 \label{evaluation}
 
-All of the code discussed in this section can be found at \url{https://github.com/Undeceiver/AbsolutelyMonotonicFitting} CREATE A TAG!!\\
+All of the code discussed in this section can be found at \url{https://github.com/Undeceiver/AbsolutelyMonotonicFitting/releases/tag/20260322}\\
 
 We implemented and evaluated the following of the discussed methods:
 \begin{itemize}
@@ -433,12 +435,20 @@ Unsurprisingly, GLAMPF performs significantly worse in the non-absolutely monoto
 \includegraphics[width=\textwidth]{plots/plot_4x^2 {[0,0.5]} -- 4x-1 {[0.5,1]}_2026-03-21 18-36-28.269647.png}
 \end{figure}
 
-A consistent issue that particularly affected GLAMPF, is the overfitting to high noise values near 1 (tail). This is not an easy to solve issue, because this is fundamentally indistinguishable from high degree components in the underlying function's Taylor series. For intermediate values, noise can be avoided by bridging between lower and higher values in a consistent ways, but when there are no higher values to bridge to, the noise can easily be interpreted as an additional high degree term. This effect can be noticed for example in figure \ref{x2-x3_plot}.
+A consistent issue that particularly affected GLAMPF, is the overfitting to high noise values near 1 (tail). This is not an easy to solve issue, because this is fundamentally indistinguishable from high degree components in the underlying function's Taylor series. For intermediate values, noise can be avoided by bridging between lower and higher values in a consistent ways, but when there are no higher values to bridge to, the noise can easily be interpreted as an additional high degree term. This effect can be noticed for example in figure \ref{x2-x3_plot}.\\
+
+Considering that, out of the tested methods, constrained Vandermonde and GLAMPF are the only two that guarantee smoothness and absolute monotonicity, we consider these results provide good evidence of the appropriateness of GLAMPF, even when in some particular cases other methods may perform better, and that GLAMPF never performs catastrophically, if the underlying source function is indeed absolutely monotonic.
 
 \section{Conclusion}
 \label{conclusion}
 
+In \S \ref{approaches}, we discussed the reasons why polynomial methods are preferred to other methods for fitting absolutely monotonic functions in bounded intervals. Moreover, we justified why most of the existing approaches to this problem are not very suitable. We evaluated a few of the approaches that were potentially promising. Convex splines perform extremely well as long as the underlying function does not have fast growth patterns that require high degree polynomials to represent. Our newly introduced method of greedy lowballing absolutely monotonic polynomial fitting shows significant flexibility to all types of absolutely monotonic functions and even acceptable results on other convex but not absolutely monotonic functions. It is particularly effective at detecting high growth patterns near 1. However, it does not produce optimal results in most cases and frequently shows some level of underestimation in low or mid range values.\\
 
+The significant differences in results of the various methods linked to the growth patterns suggests ideas for future work that combine the strengths of multiple approaches. For example, a hybrid algorithm that attempts multiple methods, including some not implemented here, such as exponential sums, and selects the one that performed best for the particular data presented, could potentially perform extremely well. Similarly, the greedy approach could be extended beyond polynomials to consider exponential or hyperexponential terms. Dynamically adjusting the degree of splines or Bernstein polynomials, or dynamically adjusting growth constraints in some of these methods, could lead to a broader and more effective search process that finds a more suitable representation of the data in a wider variety of cases.\\
+
+The issues with the approaches described here can be summarized in two families: unsuitable constraints and assumptions for the specific underlying function, and non-optimal methods that do not produce the best results possible. Most of the approaches discussed can be clearly associated with at least one of these limitations, so the combination of both or the dynamic adjustment of constraints and assumptions depending on results could potentially find a better balance in more varied cases.\\
+
+For the time being and the target problem discussed in \S \ref{problem_statement}, we believe that while sometimes suboptimal, GLAMPF offers the most robust results and strongest properties of the resulting function.
 
 \dobibliography
 
