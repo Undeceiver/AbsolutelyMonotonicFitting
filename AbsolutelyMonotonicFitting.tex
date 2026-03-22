@@ -3,6 +3,8 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amsthm}
+\usepackage{array}
+\usepackage[Tol]{colorblind}
 \usepackage{emoji}
 \usepackage{fontspec}
 \usepackage{mathtools}
@@ -18,6 +20,7 @@
 \newcommand{\realfunction}[2] {{#1: #2 \rightarrow \mathbb{R}}}
 \newcommand{\cinfty} {\mathcal{C}^{\infty}}
 \newcommand{\analytic} {\mathcal{C}^{\omega}}
+\newcommand{\poorresult}[1] {\bf{\textcolor{T-Q-V5}{\underline{#1}}}}
 
 \title{Fitting absolutely monotonic real functions in bounded intervals}
 \author{Juan Casanova}
@@ -176,7 +179,7 @@ However, this has a number of challenges for application to our problem. First, 
 
 Another approach using Bernstein polynomials would be feasible if the function could be sampled at specific intervals, following Bernstein's original proof of the Weierstrass approximation theorem \cite{1912_bernstein_weierstrass_bernstein_polynomials}, but as discussed this is also infeasible for our problem.\\
 
-\subsubsection{Least squares Vandermonde interpolation}
+\subsubsection{Constrained least squares Vandermonde}
 \label{vandermonde}
 
 A simple yet important to compare to approach uses the Vandermonde matrix over the dataset up to a maximum degree to present a linear optimization problem to find a polynomial estimation. However, in order to enforce absolute monotonicity, non-negativity constraints need to be enforced on the matrix. This makes linear least squares unsuitable to solve the problem due to the severe restriction of the parameter space. Furthermore, the use of a custom loss function in our problem forces the use of nonlinear least squares optimization. Moreover, high degree polynomials are required to represent absolutely monotonic functions well enough, increasing the complexity of the optimization problem. Perhaps much more importantly, Vandermonde interpolation is numerically unstable and badly represented for high degrees, with high sensitivity to noise or numeric imprecisions during optimization.\\
@@ -231,7 +234,7 @@ Shape-constrained Bernstein polynomials \S \ref{bernstein_polynomials}&\emoji{wa
 \hline
 Precisely sampled Bernstein polynomials \S \ref{bernstein_polynomials}&\emoji{blue-circle}Selected degree&\emoji{blue-circle}Inherited from source function&\emoji{check-mark-button}Yes&\emoji{check-mark-button}Irrelevant&\emoji{x}Highly sensitive&\emoji{x}Fixed target&\emoji{x}Fixed&\emoji{x}Nonparametric&\emoji{blue-circle}Moderate&\emoji{blue-circle}Medium\\
 \hline
-Vandermonde interpolation\S \ref{vandermonde}&\emoji{warning}Limited degree&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{warning}Local optima&\emoji{warning}Sensitive&\emoji{warning}Sensitive&\emoji{blue-circle}Flexible, but affected&\emoji{check-mark-button}Any&\emoji{blue-circle}Semi-parametric&\emoji{warning}Suboptimal&\emoji{check-mark-button}Low\\
+Constrained Vandermonde \S \ref{vandermonde}&\emoji{warning}Limited degree&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{warning}Local optima&\emoji{warning}Sensitive&\emoji{warning}Sensitive&\emoji{blue-circle}Flexible, but affected&\emoji{check-mark-button}Any&\emoji{blue-circle}Semi-parametric&\emoji{warning}Suboptimal&\emoji{check-mark-button}Low\\
 \hline
 Convex splines\S \ref{convex_splines}&\emoji{warning}Very limited degree&\emoji{warning}Convex&\emoji{check-mark-button}Yes&\emoji{warning}Sensitive&\emoji{blue-circle}Robust&\emoji{blue-circle}Flexible, but affected&\emoji{check-mark-button}Any&\emoji{x}Nonparametric&\emoji{warning}Affected by degree and constraints&\emoji{blue-circle}Medium\\
 \hline
@@ -242,23 +245,200 @@ Greedy lowballing monomial sums \S \ref{greedy_lowballing}&\emoji{blue-circle}Hi
 }
 \end{center}
 
-As can be seen, GLAMPF is the only method that has good representation of the target function family and absolute monotonicity guarantees. The only other method with good qualities in these columns are precisely sampled Bernstein polynomials but these are completely infeasible due to the fixed sampling, nonparametric nature, and no space for an asymmetric loss function. In exchange, our method does not guarantee optimality, is sensitive to hyperparameters, and is computationally inefficient. These are all issues that we are prepared to accept for our target problem.
+GLAMPF is the only method that has good representation of the target function family and absolute monotonicity guarantees. The only other method with good qualities in these columns are precisely sampled Bernstein polynomials , which are completely infeasible due to fixed sampling, nonparametric nature, and no space for an asymmetric loss function. In exchange, our method does not guarantee optimality, is sensitive to hyperparameters, and is computationally inefficient. These are all issues that we are prepared to accept for our target problem.
 
 Non-linear least squares exponential sums and Vandermonde interpolation with positivity constraints are the only two other methods with acceptable combinations of properties for our problem, and both have significant disadvantages with respect to GLAMPF.
 
 \section{Evaluation}
 \label{evaluation}
 
-Discuss functions that are being tested, evaluation set up.
+All of the code discussed in this section can be found at \url{https://github.com/Undeceiver/AbsolutelyMonotonicFitting} CREATE A TAG!!\\
+
+We implemented and evaluated the following of the discussed methods:
+\begin{itemize}
+\item Constrained piecewise linear interpolation \S \ref{piecewise_interpolation}.
+\item Constrained Vandermonde fit \S \ref{vandermonde}.
+\item Convex splines \S \ref{convex_splines}.
+\item Greedy lowballing absolutely monotonic polynomial fit \S \ref{greedy_lowballing}.
+\end{itemize}
+
+In order to compare their performance, we evaluate these on multiple source functions. For each source function, we produce a random uniform sample in $[0,1]$, add positive random noise with an exponential distribution, and then run the fitting method on the resulting sample. We do multiple runs with different random samples for each source function, and measure mean square error (normalized to the value of the function at 1, NMSE) and total soft floor loss function, as well as visualizing the result. We measure these with respect to the noisy random sample used for the fit, and with respect to an equispaced noiseless sample, to check how well the characteristics of the source function are captured versus the method overfits to the noise.\\
+
+We use a broad range of source functions to test the limits of each method:
+\begin{itemize}
+\item \itemtitle{Absolutely monotonic functions} The core target of this article.
+\begin{itemize}
+\item \itemtitle{(Hyper)-exponentials} Theoretically need infinite Taylor series but we should be able to approximate well with fewer parameters. Variety of more and less intense growth patterns.
+\begin{itemize}
+\item $f_1(x) = {{e^x - 1} \over {e - 1}}$
+\item $f_2(x) = {{e^{e^x} - e} \over {e^e - e}}$
+\item $f_3(x) = {{e^{e^{e^x}} - e^e} \over {e^{e^{e}} - e^e}}$
+\end{itemize}
+\item \itemtitle{Absolutely monotonic polynomials} These should be the best fits. We try a wide variety of degrees to test limits.
+\begin{itemize}
+\item $f_4(x) = x^2$
+\item $f_5(x) = x^5+2x^4+x^3+x$
+\item $f_6(x) = 1.2x^4+0.37x^{50}+0.1x^{71}$
+\item $f_7(x) = x^{200}$
+\end{itemize}
+\end{itemize}
+\item \itemtitle{Convex but not absolutely monotonic functions} We evaluate these to see how well methods constrained to absolutely monotonic solutions can perform in them, where convex methods' additional flexibility should be benefitial.
+\begin{itemize}
+\item \itemtitle{Convex polynomials} Limited non-zero derivatives.
+\begin{itemize}
+\item $f_8(x) = 3x^2 - x^3$
+\item $f_9(x) = x^4 - 4x^3+6x^2$
+\end{itemize}
+\item \itemtitle{Trigonometric functions} Infinitely differentiable and infinite non-zero derivatives, but not absolutely monotonic.
+\begin{itemize}
+\item $f_{10}(x) = \sin({{\pi} \over 2}x - {{\pi} \over 2})+1$
+\end{itemize}
+\item \itemtitle{Piecewise polynomial} Convex, growing, but second derivative is not continuous.
+\begin{itemize}
+\item $f_{11}(x) = 4x^2 \{x \in [0,0.5]\}, 4x - 1 \{x \in [0.5,1]\}$
+\end{itemize}
+\end{itemize}
+\end{itemize}
 
 \section{Results and discussion}
 \label{results}
-Show different functions and discuss pros and cons.
 
-Should discuss tail issue with respect to noise in the data.
+Figure \ref{evaluation_metrics_sample} summarizes the evaluation metrics with respect to the noisy sample data. Emphasized are values that are particularly poor compared to other results for the same sample. Perhaps more interestingly, figure \ref{evaluation_metrics_source} summarizes the metrics with respect to the source function. Figures \ref{nmse_plot} and \ref{loss_plot} show this general comparison graphically on a logarithmic scale.\\
+
+\begin{figure}
+\caption{\label{evaluation_metrics_sample}Evaluation metrics with respect to noisy sampled data.}
+\centering
+\begin{center}
+\makebox[0.1cm]
+{
+\resizebox{1.2\textwidth}{!}{%
+\begin{tabular}{|l|*{4}{>{\centering\arraybackslash}p{20mm}>{\centering\arraybackslash}p{20mm}|}}
+\hline
+{\bf{Source function}}&\multicolumn{2}{p{40mm}|}{\bf{Piecewise linear \S \ref{piecewise_interpolation}}}&\multicolumn{2}{p{40mm}|}{\bf{Constrained Vandermonde \S \ref{vandermonde}}}&\multicolumn{2}{p{40mm}|}{\bf{Convex splines \S \ref{convex_splines}}}&\multicolumn{2}{p{40mm}|}{\bf{GLAMPF \S \ref{greedy_lowballing}}}\\
+\hline
+&NMSE&Loss&NMSE&Loss&NMSE&Loss&NMSE&Loss\\
+$f_1(x) = {{e^x - 1} \over {e - 1}}$&\tscinot{1.07}{-3}&\tscinot{3.61}{-2}&\tscinot{3.24}{-3}&\tscinot{6.26}{-2}&\tscinot{1.13}{-3}&\tscinot{3.71}{-2}&\tscinot{1.41}{-3}&\tscinot{3.76}{-2}\\
+$f_2(x) = {{e^{e^x} - e} \over {e^e - e}}$&\tscinot{1.02}{-3}&\tscinot{3.51}{-2}&\poorresult{\tscinot{1.13}{-2}}&\poorresult{\tscinot{1.17}{-1}}&\tscinot{1.06}{-3}&\tscinot{3.58}{-2}&\tscinot{2.12}{-3}&\tscinot{4.61}{-2}\\
+$f_3(x) = {{e^{e^{e^x}} - e^e} \over {e^{e^{e}} - e^e}}$&\tscinot{8.67}{-7}&\tscinot{1.02}{-3}&\tscinot{6.01}{-3}&\poorresult{\tscinot{8.54}{-2}}&\tscinot{2.99}{-3}&\poorresult{\tscinot{6.03}{-2}}&\tscinot{1.82}{-5}&\tscinot{4.26}{-3}\\
+$f_4(x) = x^2$&\tscinot{6.21}{-4}&\tscinot{2.74}{-2}&\tscinot{3.2}{-3}&\tscinot{6.23}{-2}&\tscinot{6.27}{-4}&\tscinot{2.75}{-2}&\tscinot{7.45}{-4}&\tscinot{2.73}{-2}\\
+$f_5(x) = x^5+2x^4+x^3+x$&\tscinot{2.82}{-3}&\tscinot{1.31}{-1}&\tscinot{1.1}{-2}&\tscinot{2.59}{-1}&\tscinot{3.04}{-3}&\tscinot{1.36}{-1}&\tscinot{7.09}{-3}&\tscinot{1.88}{-1}\\
+$f_6(x) = 1.2x^4+0.37x^{50}+0.1x^{71}$&\tscinot{1.31}{-3}&\tscinot{5.14}{-2}&\tscinot{4.64}{-3}&\tscinot{9.69}{-2}&\tscinot{2.35}{-3}&\tscinot{6.89}{-2}&\tscinot{2.51}{-3}&\tscinot{6.47}{-2}\\
+$f_7(x) = x^{200}$&\tscinot{4.14}{-8}&\tscinot{2.24}{-4}&\tscinot{3.16}{-3}&\poorresult{\tscinot{6.2}{-2}}&\tscinot{3.24}{-3}&\poorresult{\tscinot{6.29}{-2}}&\tscinot{6.27}{-6}&\tscinot{2.5}{-3}\\
+$f_8(x) = 3x^2 - x^3$&\tscinot{1.14}{-3}&\tscinot{5.26}{-2}&\tscinot{6.12}{-3}&\tscinot{1.22}{-1}&\tscinot{1.16}{-3}&\tscinot{5.3}{-2}&\tscinot{5.06}{-3}&\tscinot{1.01}{-1}\\
+$f_9(x) = x^4 - 4x^3+6x^2$&\tscinot{3.08}{-3}&\tscinot{1.06}{-1}&\tscinot{1.1}{-2}&\tscinot{2}{-1}&\tscinot{3.09}{-3}&\tscinot{1.06}{-1}&\tscinot{1.23}{-2}&\tscinot{1.92}{-1}\\
+$f_{10}(x) = \sin({{\pi} \over 2}x - {{\pi} \over 2})+1$&\tscinot{9.5}{-4}&\tscinot{3.39}{-2}&\poorresult{\tscinot{9.53}{-3}}&\poorresult{\tscinot{1.07}{-1}}&\tscinot{9.66}{-4}&\tscinot{3.42}{-2}&\tscinot{2.85}{-3}&\tscinot{5.34}{-2}\\
+$f_{11}(x) = 4x^2 \{x \in [0,0.5]\}, 4x - 1 \{x \in [0.5,1]\}$&\tscinot{3.12}{-3}&\tscinot{1.07}{-1}&\tscinot{1.31}{-2}&\tscinot{2.19}{-1}&\tscinot{3.1}{-3}&\tscinot{1.06}{-1}&\tscinot{1.59}{-2}&\tscinot{2.18}{-1}\\
+\hline
+\end{tabular}
+}
+}
+\end{center}
+\end{figure}
+
+\begin{figure}
+\caption{\label{evaluation_metrics_source}Evaluation metrics with respect to source function.}
+\centering
+\begin{center}
+\makebox[0.1cm]
+{
+\resizebox{1.2\textwidth}{!}{%
+\begin{tabular}{|l|*{4}{>{\centering\arraybackslash}p{20mm}>{\centering\arraybackslash}p{20mm}|}}
+\hline
+{\bf{Source function}}&\multicolumn{2}{p{40mm}|}{\bf{Piecewise linear \S \ref{piecewise_interpolation}}}&\multicolumn{2}{p{40mm}|}{\bf{Constrained Vandermonde \S \ref{vandermonde}}}&\multicolumn{2}{p{40mm}|}{\bf{Convex splines \S \ref{convex_splines}}}&\multicolumn{2}{p{40mm}|}{\bf{GLAMPF \S \ref{greedy_lowballing}}}\\
+\hline
+&NMSE&Loss&NMSE&Loss&NMSE&Loss&NMSE&Loss\\
+$f_1(x) = {{e^x - 1} \over {e - 1}}$&\tscinot{1.05}{-4}&\tscinot{1.02}{-2}&\tscinot{7.16}{-4}&\tscinot{2.94}{-2}&\tscinot{1.76}{-5}&\tscinot{4.19}{-3}&\tscinot{7.16}{-5}&\tscinot{8.77}{-3}\\
+$f_2(x) = {{e^{e^x} - e} \over {e^e - e}}$&\tscinot{9.67}{-6}&\tscinot{3.12}{-3}&\poorresult{\tscinot{6.21}{-3}}&\poorresult{\tscinot{8.68}{-2}}&\tscinot{2.65}{-6}&\tscinot{1.63}{-3}&\tscinot{6.32}{-4}&\tscinot{2.52}{-2}\\
+$f_3(x) = {{e^{e^{e^x}} - e^e} \over {e^{e^{e}} - e^e}}$&\tscinot{6.17}{-4}&\tscinot{2.72}{-2}&\poorresult{\tscinot{1.42}{-2}}&\poorresult{\tscinot{1.32}{-1}}&\tscinot{8.82}{-3}&\poorresult{\tscinot{1.04}{-1}}&\tscinot{3.82}{-5}&\tscinot{6.62}{-3}\\
+$f_4(x) = x^2$&\tscinot{7.7}{-5}&\tscinot{8.77}{-3}&\poorresult{\tscinot{1.11}{-3}}&\tscinot{3.67}{-2}&\tscinot{3.65}{-5}&\tscinot{6.04}{-3}&\tscinot{5.97}{-5}&\tscinot{8.46}{-3}\\
+$f_5(x) = x^5+2x^4+x^3+x$&\tscinot{9.18}{-5}&\tscinot{2.14}{-2}&\poorresult{\tscinot{4.34}{-3}}&\tscinot{1.62}{-1}&\tscinot{2.98}{-5}&\tscinot{1.23}{-2}&\poorresult{\tscinot{2.97}{-3}}&\tscinot{1.22}{-1}\\
+$f_6(x) = 1.2x^4+0.37x^{50}+0.1x^{71}$&\tscinot{4.36}{-5}&\tscinot{8.83}{-3}&\tscinot{2.3}{-3}&\tscinot{6.83}{-2}&\tscinot{1.15}{-3}&\tscinot{4.82}{-2}&\tscinot{2.78}{-4}&\tscinot{2.16}{-2}\\
+$f_7(x) = x^{200}$&\tscinot{4.25}{-4}&\tscinot{2.27}{-2}&\poorresult{\tscinot{1}{-2}}&\poorresult{\tscinot{1.11}{-1}}&\poorresult{\tscinot{1.02}{-2}}&\poorresult{\tscinot{1.11}{-1}}&\tscinot{9.13}{-5}&\tscinot{1.05}{-2}\\
+$f_8(x) = 3x^2 - x^3$&\tscinot{8.03}{-5}&\tscinot{1.27}{-2}&\tscinot{2.67}{-3}&\tscinot{8.05}{-2}&\tscinot{2.06}{-5}&\tscinot{6.44}{-3}&\tscinot{2.02}{-3}&\tscinot{6.83}{-2}\\
+$f_9(x) = x^4 - 4x^3+6x^2$&\tscinot{4.2}{-3}&\tscinot{1.12}{-1}&\tscinot{4}{-3}&\tscinot{1.2}{-1}&\tscinot{3.96}{-5}&\tscinot{1.09}{-2}&\tscinot{4.2}{-3}&\tscinot{1.12}{-1}\\
+$f_{10}(x) = \sin({{\pi} \over 2}x - {{\pi} \over 2})+1$&\tscinot{1.41}{-5}&\tscinot{3.76}{-3}&\poorresult{\tscinot{5.6}{-3}}&\poorresult{\tscinot{8.24}{-2}}&\tscinot{1.1}{-5}&\tscinot{3.32}{-3}&\tscinot{7.87}{-4}&\tscinot{2.81}{-2}\\
+$f_{11}(x) = 4x^2 \{x \in [0,0.5]\}, 4x - 1 \{x \in [0.5,1]\}$&\tscinot{2.38}{-5}&\tscinot{8.45}{-3}&\poorresult{\tscinot{5.08}{-3}}&\poorresult{\tscinot{1.36}{-1}}&\tscinot{1.43}{-5}&\tscinot{6.54}{-3}&\poorresult{\tscinot{6.54}{-3}}&\poorresult{\tscinot{1.4}{-1}}\\
+\hline
+\end{tabular}
+}
+}
+\end{center}
+\end{figure}
+
+\begin{figure}
+\caption{\label{nmse_plot}Normalized mean square error of various methods and source functions}
+\centering
+\includegraphics[width=1.1\textwidth]{plots/plot_nmse_comparison_2026-03-22 02-17-37.425658.png}
+\end{figure}
+
+\begin{figure}
+\caption{\label{loss_plot}Loss of various methods and source functions}
+\centering
+\includegraphics[width=1.1\textwidth]{plots/plot_loss_comparison_2026-03-22 02-17-38.670126.png}
+\end{figure}
+
+Piecewise linear interpolation performs quite well in some cases but is only considered as a comparison element, since it fails to satisfy two of the most core requirements of our problem statement: smoothness and absolute monotonicity. Generally speaking, the constrained Vandermonde approximation fit through non-linear least squares performs significantly worse than all other methods. Its simultaneous fitting approach struggles with the constraints and fails to fit all degree ranges simultaneously. This can be observed in test cases by noticing that it either underestimates too much on lower values, which is better approximated with low degree polynomials (see figure \ref{x2_plot}), or it underestimates too much near 1, which is better approximated with high degree polynomials (see figure \ref{eex_plot}).\\
+
+\begin{figure}
+\caption{\label{x2_plot}Vandermonde underestimates on lower values}
+\centering
+\includegraphics[width=\textwidth]{plots/plot_x2_2026-03-21 18-35-48.406019.png}
+\end{figure}
+
+\begin{figure}
+\caption{\label{eex_plot}Vandermonde underestimates near 1}
+\centering
+\includegraphics[width=\textwidth]{plots/plot_e(ex) - normalized_2026-03-21 18-35-27.018168.png}
+\end{figure}
+
+With a few exceptions, evaluation on the source function is better than on the sample. This indicates that all methods are capable of capturing the underlying structure of the function and abstracting away from the noise and specific sample. The main exceptions happen with the piecewise linear approach, which is to be expected due to having a higher number of parameters and fewer constraints, and in the cases where very high degree polynomials are required to represent the underlying functions (specifically $f_3={{e^{e^{e^x}} - e^e} \over {e^{e^{e}} - e^e}}$ and $f_7 = x^{200}$).
+
+The high degree dependence is particularly noticeable in the variation across methods. Convex splines perform best of all tested methods as long as high degrees are not required, but lose significant representation capability otherwise. Conversely, GLAMPF performs particularly well compared with the other methods precisely in the cases where a high degree flexibility is required, while performing reasonably well in other cases. For example, in figure \ref{x5x4x3x_plot} we can observe the dominance of convex splines over GLAMPF even in absolutely monotonic cases when low degree is sufficient. However, in very high growth cases like figures \ref{eeex_plot}, \ref{x71_plot}, and \ref{x200_plot}, convex splines completely fails to fit the higher end of the curve while GLAMPF performs surprisingly well.\\
+
+\begin{figure}
+\caption{\label{x5x4x3x_plot}Convex splines perform particularly well when low degrees are sufficient}
+\centering
+\includegraphics[width=\textwidth]{plots/plot_x^5+2x^4+x^3+x_2026-03-21 18-35-59.785606.png}
+\end{figure}
+
+\begin{figure}
+\caption{\label{eeex_plot}In very high growth cases, GLAMPF significantly outperforms convex splines}
+\centering
+\includegraphics[width=\textwidth]{plots/plot_e^(e^(e^x)) - normalized_2026-03-21 18-35-37.623192.png}
+\end{figure}
+
+\begin{figure}
+\caption{\label{x71_plot}In very high growth cases, GLAMPF significantly outperforms convex splines}
+\centering
+\includegraphics[width=\textwidth]{plots/plot_1.2x^4+0.37x^50+0.1x^71_2026-03-21 18-36-40.604919.png}
+\end{figure}
+
+\begin{figure}
+\caption{\label{x200_plot}In very high growth cases, GLAMPF significantly outperforms convex splines}
+\centering
+\includegraphics[width=\textwidth]{plots/plot_x^200_2026-03-21 18-36-50.825627.png}
+\end{figure}
+
+Unsurprisingly, GLAMPF performs significantly worse in the non-absolutely monotonic cases, consistently underestimating in lower values in order to preserve the absolutely monotonic curve shape without overestimating values near 1. See figures \ref{x2-x3_plot} and \ref{piecewise_plot}.\\
+
+\begin{figure}
+\caption{\label{x2-x3_plot}GLAMPF underestimates in lower values when the source function is not absolutely monotonic}
+\centering
+\includegraphics[width=\textwidth]{plots/plot_3x^2-x^3_2026-03-21 18-36-08.133469.png}
+\end{figure}
+
+\begin{figure}
+\caption{\label{piecewise_plot}GLAMPF underestimates in lower values when the source function is not absolutely monotonic}
+\centering
+\includegraphics[width=\textwidth]{plots/plot_4x^2 {[0,0.5]} -- 4x-1 {[0.5,1]}_2026-03-21 18-36-28.269647.png}
+\end{figure}
+
+A consistent issue that particularly affected GLAMPF, is the overfitting to high noise values near 1 (tail). This is not an easy to solve issue, because this is fundamentally indistinguishable from high degree components in the underlying function's Taylor series. For intermediate values, noise can be avoided by bridging between lower and higher values in a consistent ways, but when there are no higher values to bridge to, the noise can easily be interpreted as an additional high degree term. This effect can be noticed for example in figure \ref{x2-x3_plot}.
 
 \section{Conclusion}
 \label{conclusion}
+
+
 
 \dobibliography
 
