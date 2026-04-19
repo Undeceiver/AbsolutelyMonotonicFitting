@@ -29,7 +29,7 @@
 
 \maketitle
 
-We discuss the problem of fitting absolutely monotonic functions to noisy random samples in bounded intervals. This specific shape-constrained estimation problem has not been significantly explored in the literature, though it is related to other kinds of shape-constrained estimation such as fitting exponential sums or convex polynomial fitting. A wide variety of potential approaches applicable to the problem are discussed, including various forms of exponential sum fitting, using Bernstein polynomial bases or splines in constrained optimization problems, and non-linear least squares optimization with Vandermonde matrices. A novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF) is also introduced. This method finds monomial terms to iteratively approximate the sampled data from below (lowballing), ensuring absolute monotonicity by construction and robustness to a variety of function shapes. However, it lacks general optimality and occasionally underestimates certain regions of the sample. A few of the most promising methods were implemented and compared on generated samples from a wide variety of absolutely monotonic and convex functions. While convex splines displayed the best results in cases where low degree polynomials were sufficient, GLAMPF was the most robust approach with the strongest guarantees and produced acceptable results in every test case.
+We discuss the problem of fitting absolutely monotonic functions to noisy random samples in bounded intervals with underestimation bias. This specific shape-constrained estimation problem presents a unique set of constraints that challenge the capabilities of most existing approaches. We explore the applicability and limitations of various kinds of shape-constrained estimation, including exponential sum fitting, Bernstein polynomials, constrained splines, and variations of traditional Vandermonde estimation. A novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF) is also introduced. This method finds monomial terms to iteratively approximate the sampled data from below (lowballing), guaranteeing absolute monotonicity by construction, demonstrating robustness to a variety of function shapes, and exploiting underestimation bias for algorithmic structure. However, it lacks general optimality and occasionally underestimates certain regions of the sample. A few of the most promising methods were implemented and compared on generated samples from a wide variety of absolutely monotonic and convex functions. While convex splines displayed the best results in cases where low degree polynomials were sufficient, GLAMPF was the most robust approach with the strongest guarantees and produced acceptable results in every test case.
 
 \pagebreak
 \tableofcontents
@@ -40,9 +40,9 @@ We discuss the problem of fitting absolutely monotonic functions to noisy random
 
 The motivating problem for this paper is the production of {\emph{reward curves from scores in a competitive single player game}}. Specifically, Beat Saber\footnote{\url{https://beatsaber.com/}} is a virtual reality rhythm game released in 2018 in which players play single player maps with a maximum possible score, attempting to get as close as possible. Scores in Beat Saber are often represented as percentages of the maximum possible score. Beat Saber has rich scoring mechanics\footnote{\url{https://bsmg.wiki/ranking-guide.html}}, and a healthy competitive scene with upwards of 60,000 active ranked players\footnote{Verified using BeatLeader's search functionality at \url{https://beatleader.com/ranking/1?mapsType=all&recentScoreTime=1721433600}}, which can be observed through its two most popular ranked leaderboards: ScoreSaber\footnote{\url{https://scoresaber.com/}} and BeatLeader\footnote{\url{https://beatleader.xyz/}}. Competitive Beat Saber focuses on large pools of {\emph{custom}} maps made by members of the community ({\emph{mappers}}) that undergo a ranking process\footnote{\url{https://beatleader.wiki/en/ranking/Ranking-your-map}} to ensure their competitive viability. For example, BeatLeader offers over 3500 different ranked maps\footnote{\url{https://beatleader.xyz/leaderboards}}.
 
-Experienced Beat Saber players observe a high diminishing returns difficulty curve. The closer to 100\%, the harder it is to improve the score further. There are exactly two 100\% scores across all ranked maps in Beat Leader (over 3500 maps, over 60,000 players), on particularly easy maps by particularly skilled players. The difference in difficulty between a 98\% and a 99\% score in a map is orders of magnitude larger than the difference between a 90\% and a 91\%. Most scores that do not fail the map are over 70\% to begin with.
+Experienced Beat Saber players observe a high diminishing returns difficulty curve. The closer to 100\%, the harder it is to improve the score further. There are exactly two 100\% scores across all ranked maps in Beat Leader (over 3500 maps, over 60,000 players), on particularly easy maps by particularly skilled players. The difference in difficulty between a 98\% and a 99\% score in a map is significantly larger than the difference between a 90\% and a 91\%. Most scores that do not fail the map are over 70\% to begin with.
 
-Different maps do not just have different difficulties, but also different difficulty {\emph{curves}}, with the difficulty accumulating at different relative ranges of the score spectrum, while always preserving the diminishing returns nature. The problem of finding adequate reward curves for each map is difficult and highly sought-after by the Beat Saber ranked community \cite{2025_casanova_birating}. Shape-constrained fitting from player scores is a valuable tool in this context. Naturally, a higher score should always give a higher reward (often quantified as Performance Points (PP)), introducing a growing constraint on the reward curve. Moreover, the diminishing returns nature justifies introducing further growth constraints that increase the rate at which the rewards increase. While convexity constraints could be used, there are growing convex curves that do not adequately reflect the ever increasingly difficult nature of approaching 100\% score in Beat Saber maps (see, for example, figure \ref{convex_not_am}). Therefore, we instead consider the more constraining problem of fitting smooth absolutely monotonic curves from sample scores.\\
+Different maps do not just have different difficulties, but also different difficulty {\emph{curves}}, with the difficulty accumulating at different relative ranges of the score spectrum, while always preserving the diminishing returns nature. The problem of finding adequate reward curves for each map is difficult and highly sought-after by the Beat Saber ranked community \cite{2025_casanova_birating}. Shape-constrained fitting from player scores is a valuable tool in this context. Naturally, a higher score should always give a higher reward (often quantified as Performance Points (PP)), introducing a growing constraint on the reward curve. Moreover, the diminishing returns nature justifies introducing further growth constraints that increase the rate at which the rewards increase. These observations suggest the need for increasingly strong shape constraints beyond monotonicity and convexity. While convexity constraints could be used, we believe that absolutely monotonic functions might more adequately reflect the ever increasingly difficult nature of approaching 100\% score in Beat Saber maps (see, for example, figure \ref{convex_not_am}). This is a choice made based on intuition and observation of how diminishing returns work in Beat Saber scores, and that convex curves would produce results that would likely be considered inadequate for a ranking system, rather than a definitive principled conclusion.\\
 
 \begin{figure}
 \caption{\label{convex_not_am}Smooth piecewise polynomial that is growing and convex but not absolutely monotonic}
@@ -52,11 +52,11 @@ Different maps do not just have different difficulties, but also different diffi
 
 \subsection{Absolutely monotonic functions}
 
-A real function is {\emph{absolutely monotonic}} if all of its derivatives are non-negative. Absolutely monotonic functions grow faster and faster as we approach higher values, curving upwards in every sense. They are growing and convex, though not all growing convex functions are absolutely monotonic.
+A real function is {\emph{absolutely monotonic}} if all of its derivatives are non-negative. Absolutely monotonic functions are therefore growing and convex, but not all growing convex functions are absolutely monotonic.\\
 
 Convex smooth functions, and in particular fitting convex smooth functions from samples, have been studied extensively \cite{2001_groeneboom_estimation_convex_function, 2015_lu_spline_monotonic_regression, 2015_lebair_derivative_constrain_spline, 2013_nagahara_monotone_splines_linear, 2004_zhang_monotone_splines, 1998_he_monotone_spline, 2008_aguilera_approximating_optimization_convex_functions, 2013_hannah_multivariate_convex_regression, 2002_holmstr_parameter_estimation_fitting_exponentials, 2005_lachand_minimizing_convex_bodies, 2011_kopotun_shape_preserving_approximation_algebraic_polynomials, 2012_wang_shape_regression_bernstein, 2023_ghosal_shape_regression_bernstein} due to the multitude of applications in economics, statistics, machine learning, etc. Like other types of {\emph{shape-constrained estimation}}, we know or wish the resulting function to fulfill certain growth or smoothness properties, but also wish to fit the available data as best as possible.\\
 
-Absolutely monotonic shape-constrained estimation from fixed samples has not been studied as extensively. In general, the majority of methods that ensure absolute monotonicity of the resulting functions do so {\emph{by construction}}, and usually as a side effect of tighter restrictions. For example, fitting exponential sums \cite{2002_holmstr_parameter_estimation_fitting_exponentials, 2021_keller_prony_methods,2020_chunaev_data_fitting_exponential_sums,1980_evans_least_squares_exponential_sum, 1976_smith_decomposition_exponential_decays, 1976_kammler_approximation_completely_monotonic}. These also sometimes presume we can select the points to sample on.\\
+Absolutely monotonic shape-constrained estimation from fixed samples has not been studied in the same level of detail. In general, the majority of methods that ensure absolute monotonicity of the resulting functions do so {\emph{by construction}}, and usually as a side effect of tighter restrictions. For example, fitting exponential sums \cite{2002_holmstr_parameter_estimation_fitting_exponentials, 2021_keller_prony_methods,2020_chunaev_data_fitting_exponential_sums,1980_evans_least_squares_exponential_sum, 1976_smith_decomposition_exponential_decays, 1976_kammler_approximation_completely_monotonic}. These also sometimes presume we can select the points to sample on.\\
 
 In \S \ref{approaches} we discuss many potential approaches to the motivating problem in detail, highlighting this tension between less constrained methods that do not guarantee absolute monotonicity, and methods that do guarantee absolute monotonicity but are not very well suited for fitting from random samples.
 
@@ -65,7 +65,7 @@ In \S \ref{approaches} we discuss many potential approaches to the motivating pr
 
 Given a single variable {\bf{real valued}} set of datapoints in a {\bf{bounded interval}} (we can assume $[0,1]$ without loss of generality), we consider the problem of finding {\bf{absolutely monotonic}} functions that best approximate the data. We will, however, compare with some methods that only guarantee convexity due to their prominence and to understand their relative advantages and disadvantages.
 
-We presume noise in the data. In the Beat Saber map context, the x axis indicates the score obtained in the map by the player, and the y axis indicates the reward associated with it, which in the data is represented by the player skill of the player that produced the score. The player skill of a player in a ranked setting represents {\emph{their best possible performance}}, meaning that better players can sometimes produce worse scores (e.g. not taking the map seriously, being unlucky, or having less than ideal circumstances), but it is far more unlikely that a player will produce a score above their skill level. Moreover, players can attempt maps many times, retaining only their best scores. Therefore, we presume noise in the data will have a strong positive bias (the skill of the player is higher than this score in this map would suggest). In other words, our estimation should ideally favour functions that {\bf{underestimate}} the data while being as accurate as possible. In order to achieve this, we use asymmetric loss functions in our methods. We consider two different asymmetric loss functions: 
+We presume noise in the data. In the Beat Saber map context, the x axis indicates the score obtained in the map by the player, and the y axis indicates the reward associated with it, which in the data is represented by the player skill of the player that produced the score. The player skill of a player in a ranked setting represents {\emph{their best possible performance}}, meaning that better players can sometimes produce worse scores (e.g. not taking the map seriously, being unlucky, or having less than ideal circumstances), but it is far more unlikely that a player will produce a score above their skill level. Moreover, players can attempt maps many times, retaining only their best scores. Therefore, in most practical cases, noise in the data will have a positive bias (the skill of the player is higher than this score in this map would suggest). In other words, our estimation should ideally favour functions that {\bf{underestimate}} the data while being as accurate as possible. In order to achieve this, we use asymmetric loss functions in our methods. We consider two different asymmetric loss functions: 
 
 \begin{enumerate}
 \item Pinball loss
@@ -75,10 +75,12 @@ l_1(r) =& \tau r &\text{if } r \geq 0\\
 & (\tau-1)r &\text{if } r < 0\\
 \end{array}
 \end{equation}
+\noindent for $\tau \in [0,1]$.
 \item Soft floor
 \begin{equation}
-l_2(r) = |r| + e^{-\tau r}
+l_2(r) = |r| + e^{-\lambda r}
 \end{equation}
+\noindent for $\lambda > 0$.
 \end{enumerate}
 
 One final aspect to consider is how we will use the resulting estimations. Our goal is to use real score data to learn how to best describe the reward curves of different maps. The results of this could then be used to train a different model that looks at the map gameplay properties themselves to estimate those parameters without needing scores. This is useful for newly ranked maps that do not have enough scores yet but need a reward curve. Therefore, we are aiming for a {\bf{(semi-)parametric}} method that can output a bounded and small number of parameters that represents the fitted curve.\\
@@ -94,7 +96,7 @@ Given a set of real valued datapoints $\{x_i,y_i\}$, where $x_i \in [0,1]$, find
 \end{itemize}
 \end{problem}
 
-The remainder of this document discusses several potential approaches to solving this problem (or slightly relaxed versions of it), discussing their advantages and disadvantages. We also introduce a novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF), specifically tailored for this problem. We implemented and compared some of these approaches with simulation studies.
+This unusual combination of constraints cannot be directly solved using standard methods in the literature, which rarely consider absolute monotonicity, and typically use symmetric loss functions. The remainder of this document discusses several potential approaches to solving this problem (or slightly relaxed versions of it), discussing their advantages and disadvantages. We also introduce a novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF), specifically tailored for this problem. We implemented and compared some of these approaches with simulation studies.
 
 \S \ref{approaches} explains the approaches, with their pros and cons, including the implementation of those that were implemented. \S \ref{evaluation} presents the simulation and evaluation set up for the comparison of the implemented approaches. \S \ref{results} discusses the results of the evaluation and general discussion on how different methods compare. \S \ref{conclusion} presents the conclusions from this paper.
 
@@ -106,7 +108,7 @@ We discuss a number of reasonable approaches to the presented problem, with thei
 \subsection{Positive sums of positive exponentials}
 \label{exponential_sums}
 
-Exponential functions with positive exponents are always absolutely monotonic. A deeply related family of functions are {\emph{completely monotonic functions}}, which are functions with alternating sign derivatives. It is easy to see that $f(x)$ is absolutely monotonic in $(a,b)$ if and only if $f(-x)$ is completely monotonic in $(-a,-b)$. Moreover, Bernstein's theorem characterizes all completely monotonic functions in $[0,+\infty)$, and consequently also all absolutely monotonic functions in $(-\infty,0]$, as sums of exponentials:
+Exponential functions with positive exponents are always absolutely monotonic. A deeply related family of functions are {\emph{completely monotonic functions}}, which are functions with alternating sign derivatives. It is easy to see that $f(x)$ is absolutely monotonic in $(a,b)$ if and only if $f(-x)$ is completely monotonic in $(-b,-a)$. Moreover, Bernstein's theorem characterizes all completely monotonic functions in $[0,+\infty)$, and consequently also all absolutely monotonic functions in $(-\infty,0]$, as sums of exponentials:
 
 \begin{theorem}[\cite{1929_bernstein_absolutely_monotonic}]
 Let $f \in \cinfty([0,+\infty))$.
@@ -128,15 +130,75 @@ f(x) = \int_0^{\infty} e^{tx}d\mu(t)
 
 In a few words, any absolutely monotonic function in $(-\infty,0]$ can be uniquely characterised as an infinite positive sum of exponentials with positive exponents. This also forces $f$ to be analytic because the representation is analytic. The mathematical theory of completely monotonic, absolutely monotonic, and related families of functions is much broader and deeper than what we discuss or use in this paper\cite{2014_koumandos_completely_monotonic}.
 
-This is obviously interesting from the point of view of attempting semi-parametric fitting of absolutely monotonic functions: if a function can be expressed as a sum of exponentials, can we select the most significant exponents in this sum to estimate the function? There is one important initial problem with this approach: it only applies to functions that are absolutely monotonic in all of $(-\infty,0]$. Many absolutely monotonic functions in $[0,1]$ cannot be extended analytically to $(-\infty,0]$, and therefore do not admit an exponential sum representation. A simple and important example of this is monomials $f(x) = x^n$. All of these are absolutely monotonic (and, in fact, analytic) in $[0,1]$, but cannot be extended to an absolutely monotonic function in $(-\infty,0]$, and cannot be represented as sums of exponentials.
+This is particularly relevant from the point of view of attempting semi-parametric fitting of absolutely monotonic functions: if a function can be expressed as a sum of exponentials, can we select the most significant exponents in this sum to estimate the function? There is one important initial problem with this approach: it only applies to functions that are absolutely monotonic in all of $(-\infty,0]$. Many absolutely monotonic functions in $[0,1]$ cannot be extended analytically to $(-\infty,0]$, and therefore do not admit an exponential sum representation. A simple and important example of this is monomials $f(x) = x^n$. All of these are absolutely monotonic (and, in fact, analytic) in $[0,1]$, but cannot be extended to an absolutely monotonic function in $(-\infty,0]$, and cannot be represented as sums of exponentials.\\
 
-When attempting to use sums of exponentials to fit datapoints to absolutely monotonic functions, this severely limits the representation power. Nonetheless, should we accept this limitation, there is extensive literature on the subject of fitting exponential sums.\\
+However, this limitation can be lifted with the adequate problem transformation. Consider the diffeomorphism $x = e^y$ that identifies functions $f(x) \in \cinfty((0,1])$ with functions $g(y) \in \cinfty((-\infty,0])$. This mapping represents a meaningful connection between absolutely monotonic functions in both of these domains. First, we note that absolute monotonicity of $f$ is strictly stronger than absolute monotonicity of $g$.
+
+\begin{lemma}
+Let $f(x) \in \cinfty((0,1])$ be an absolutely monotonic function and consider $g(y) = f(e^y) \in \cinfty((-\infty,0])$.\\
+
+Then:
+\begin{enumerate}
+\item $g$ is absolutely monotonic.
+\item The Bernstein representation $g(y) = \int_0^{\infty} e^{ty}d\mu(t)$, must be such that $\mu$ is only non-zero on integer $t$, and thus
+\begin{equation}
+\begin{array}{l}
+g(y) = \sum_{t=0}^{\infty} a_t e^{ty}\\
+f(x) = \sum_{t=0}^{\infty} a_t x^t\\
+\end{array}
+\end{equation}
+\noindent with $a_t > 0$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Proving $g$ is absolutely monotonic is a straightforward application of the chain rule:
+\begin{equation}
+\begin{array}{l}
+g^{\prime}(y) = (f(e^y))^{\prime} = f^{\prime}(e^y) \cdot e^y\\
+g^{\prime\prime}(y) = f^{\prime\prime}(e^y) \cdot e^y \cdot e^y + f^{\prime}(e^y) \cdot e^y\\
+g^{\prime\prime\prime}(y) = f^{\prime\prime\prime}(e^y) \cdot e^y \cdot e^y \cdot e^y + 3 f^{\prime\prime}(e^y) \cdot e^y \cdot e^y + f^{\prime}(e^y) \cdot e^y\\
+...\\
+\end{array}
+\end{equation}
+\noindent where we can see that subsequent derivatives only include sums and products of derivatives of $f$ evaluated in $e^y \in (0,1]$ (positive because $f$ is absolutely monotonic) and $e^y$ terms (always positive), and therefore are all positive.\\
+
+From this, we can apply Bernstein's theorem to present $g(y) = \int_0^{\infty} e^{ty}d\mu(t)$ for non-negative Borel measure $\mu$, and apply the change of variables $x = e^y$, then $f(x) = f(e^y) = g(y) = \int_0^{\infty} e^{ty}d\mu(t) = \int_0^{\infty} x^t d\mu(t)$. Consider the derivatives of $f$ under this representation:
+
+\begin{equation}
+\nderiv{f}{n}(x) = \int_0^{\infty} t \cdot (t-1) \cdot ... \cdot (t - n + 1) x^{t-n} d\mu(t)
+\end{equation}
+
+\noindent which we know to be positive for all $n$. For integer $t$, these subsequent multiplications are all positive until a $0$ term appears (after $t$ derivations), cancelling out the term in all subsequent derivatives. This is what we expect with integer degree polynomials.
+
+For non-integer $t$, the term $t \cdot (t−1) \cdot ... \cdot (t−n+1)$ changes sign as $n$ increases and grows factorially in magnitude. If $\mu$ assigns positive mass to any non-integer $t$, then for sufficiently large $n$, the integral contains contributions of alternating sign and unbounded magnitude that cannot be canceled by a fixed non-negative measure. This contradicts the requirement that all derivatives remain non-negative. Therefore, $\mu(t) = 0$ for all non-integer $t$.
+\end{proof}
+
+This result works in both directions, though, and we can show that integer mixture terms is exactly the condition required to map absolutely monotonic functions in $(-\infty,0]$ to absolutely monotonic functions in $(0,1]$.
+
+\begin{lemma}
+Let $g(y) \in \cinfty((-\infty,0])$ be an absolutely monotonic function that only has integer terms in its Bernstein representation. That is, $g(y) = \sum_{t=0}^{\infty} a_t e^{ty}$.\\
+
+Then, $f(x) = g(\log x) \in \cinfty((0,1])$ is absolutely monotonic.
+\end{lemma}
+
+\begin{proof}
+Simply write $f$ as a discrete sum. $f(x) = g(\log x) = \sum_{t=0}^{\infty} a_t e^{t \log x} = \sum_{t=0}^{\infty} a_t x^t$. We know that for integer $t > 0$, each $x^t$ is absolutely monotonic, and thus their discrete positive sum is also absolutely monotonic.
+\end{proof}
+
+In summary
+
+\begin{theorem}
+There is a one-to-one correspondence between absolutely monotonic functions in $(0,1]$ and absolutely monotonic functions in $(-\infty,0]$ that only have integer terms in their Bernstein representation, given by the change of variables $x = e^y$.
+\end{theorem}
+
+What this means for our problem is that fitting absolutely monotonic functions in $(0,1]$ corresponds exactly to the problem of fitting exponential sums in $(-\infty,0]$, constrained to integer exponents. In the remainder of this section we discuss various methods used for fitting exponential sums, some of which can be constrained to integer exponents.\\
 
 Prony's method relies on sampling at specific intervals to exploit the structure of an exponential sum\cite{2002_holmstr_parameter_estimation_fitting_exponentials, 2021_keller_prony_methods,2020_chunaev_data_fitting_exponential_sums}. This is an effective method for calculating transforms of known functions that can be sampled at prescribed intervals, but is not suitable for fitting a function to random data that does not adjust to this structure and contains noise.\\
 
 Nonlinear least squares optimization with various suitable setups can be used to approximate a set of parameters (both coefficients and exponents) for an exponential sum that minimizes loss on the datapoints\cite{2002_holmstr_parameter_estimation_fitting_exponentials,1980_evans_least_squares_exponential_sum}. This presents challenges such as convergence to local optima (particularly for unusual loss functions), high reliance on the parameterization choice, complex and unpredictable effects of noise in the data, the requirement for the loss function to be smooth, and poor computational scalability to higher number of parameters. It is nonetheless a feasible option for datapoints that can be approximated using exponential sums.\\
 
-A number of other approaches and variations on the aforementioned approaches for fitting exponential sums exist. All of these share some of the challenges discussed, especially the need for specific sampling, sensitivity to noise, convergence to local optima, and computational issues. For example, \cite{1976_smith_decomposition_exponential_decays} uses a spectral method to fit exponential sums, but the approach is outdated, computationally problematic, shows mixed results, and most importantly, requires admitting negative coefficients, losing absolute monotonicity. It is possible that the novel greedy lowballing polynomial method introduced in \S \ref{polynomials} can be used with exponential sums as well, but it would incur the aforementioned representation limitation and thus this was not explored.\\
+A number of other approaches and variations on the aforementioned approaches for fitting exponential sums exist. All of these share some of the challenges discussed, especially the need for specific sampling, sensitivity to noise, convergence to local optima, and computational issues. For example, \cite{1976_smith_decomposition_exponential_decays} uses a spectral method to fit exponential sums, but the approach is outdated, computationally limited, shows mixed results, and most importantly, requires admitting negative coefficients, losing absolute monotonicity.\\
 
 \subsection{Constrained piecewise linear interpolation}
 \label{piecewise_interpolation}
@@ -154,23 +216,11 @@ We implemented this method for comparison purposes even if it does not satisfy i
 \subsection{Polynomials}
 \label{polynomials}
 
-Taylor's theorem is foundational in real analysis and naturally connected to the problem of fitting absolutely monotonic functions. If we restrict our potential functions to analytic functions $\analytic$, then the Taylor series at any point of the function explicitly presents all the derivatives of the function at that point. Moreover, if all derivatives at a point are positive and the function is analytic, it is guaranteed that they will only grow, and therefore the function is absolutely monotonic in the whole half-line after that point. We can summarize this in the following lemma, by building analytic functions from their Taylor series at 0:
+In \S \ref{exponential_sums} we proved that absolutely monotonic functions in $(0,1]$ must be positive monomial sums as a consequence of Bernstein's theorem for absolutely monotonic functions in $(-\infty,0]$, and this result is directly related to Taylor's theorem. The representation $f(x) =  \sum_{t=0}^{\infty} a_t x^t$ is exactly the Taylor series of $f$ around $0$. We can therefore skip the connection with exponential sums and attempt to estimate the $a_t$ in the Taylor series of the function directly as a polynomial fitting problem.\\
 
-\begin{lemma}
-An analytic function $f \in \analytic([0,+\infty))$ is absolutely monotonic in the positive half-line if and only if it is of the form $\sum\limits_{i=0}^{\infty} a_i x^i$, where every $a_i \geq 0$.
-\end{lemma}
+Some important questions remain, and different polynomial fitting methods will be discussed in this section to address these questions. The first is what method to use to obtain good approximation coefficients $a_t$ from the sample without further knowledge about the underlying function (other than absolute monotonicity), especially when the sample is predetermined and the function cannot be sampled at specific points. This also relates to the question of how the fitting method responds to noisy data. Finally, there is the question of how many coefficients are necessary to provide a good approximation of the function and how to provide as good an approximation as possible with as few as possible (or a predefined number of) coefficients.\\
 
-An important result justifies the restriction to analytic functions to perform approximations on a compact interval $[0,1]$. An absolutely monotonic function in $[0,1]$ in particular is absolutely monotonic in $(0,1)$, and therefore it must be analytic in that open interval \cite{2014_koumandos_completely_monotonic}. While analyticity may not extend to the endpoints, this is enough to use the Weierstrass theorem to ensure that the function can be uniformly approximated by absolutely monotonic polynomials. We can summarize all of this in the following lemma:
-
-\begin{lemma}
-A function $f \in \cinfty([0,1])$ is absolutely monotonic if and only if it can be uniformly approximated by polynomials of the form $\sum\limits_{i=0}^{N} a_i x^i$, where every $a_i \geq 0$.
-\end{lemma}
-
-In short, we can use non-negative polynomial sums to fit our data, ensuring absolute monotonicity by construction and strong guarantees about approximation capability.\\
-
-Some important questions remain, and different polynomial fitting methods will be discussed in this section to address these questions. The first is what method to use to obtain good approximation coefficients $a_i$ from the sample without further knowledge about the underlying function (other than absolute monotonicity), especially when the sample is predetermined and the function cannot be sampled at specific points. This also relates to the question of how the fitting method responds to noisy data. Finally, there is the question of how many coefficients are necessary to provide a good approximation of the function and how to provide as good an approximation as possible with as few as possible (or a predefined number of) coefficients.\\
-
-One thing worth discarding from the beginning is spectral methods. Taylor series are sensitive to small variations and overall lack a stable structure that preserves coefficients and/or degree dominance under approximation circumstances, an issue that grows the further away from 0 that we evaluate the series. From a practical point of view, it is not feasible, especially from sampled noisy data, to reliably reconstruct an exact and/or uniquely defined Taylor series, or to isolate the largest coefficients in the Taylor series. Taylor polynomials with very different coefficient distributions can be very similar pointwise, meaning that there is no way to define a preferred coefficient or degree from data points alone.\\
+Spectral methods are impractical for this problem. Taylor series are sensitive to small variations and overall lack a stable structure that preserves coefficients and/or degree dominance under approximation circumstances, an issue that grows the further away from 0 that we evaluate the series. From a practical point of view, it is challenging, especially from sampled noisy data, to reliably reconstruct an exact and/or uniquely defined Taylor series, or to isolate the largest coefficients in the Taylor series. Taylor polynomials with different coefficient distributions can be similar pointwise, meaning that a preferred coefficient or degree from data points alone tends to be unstable under noise.\\
 
 \subsubsection{Bernstein polynomials}
 \label{bernstein_polynomials}
@@ -191,25 +241,25 @@ We implemented this method for comparison purposes even if it does not satisfy i
 \subsubsection{Convex splines}
 \label{convex_splines}
 
-A popular family of shape-constrained methods discussed extensively in the literature use spline interpolation \cite{2015_lu_spline_monotonic_regression, 2015_lebair_derivative_constrain_spline, 2013_nagahara_monotone_splines_linear, 2004_zhang_monotone_splines, 1998_he_monotone_spline}. Similar to Bernstein polynomials, these methods use explicit constraints on an optimization problem to ensure monotonicity constraints. They have similar issues to Bernstein polynomials for application to our problem. Absolute monotonicity constraints are not discussed in the literature and would be even harder to implement for spline interpolation, if possible at all. Degree constraints are even harsher than Bernstein polynomial methods, with a degree of 3 used frequently in the literature, being entirely unsuitable for absolutely monotonic functions like (hyper-)exponentials. They are also nonparametric with the number of parameters being highly correlated with the quality of the approximation.\\
+A popular family of shape-constrained methods discussed extensively in the literature use spline interpolation \cite{2015_lu_spline_monotonic_regression, 2015_lebair_derivative_constrain_spline, 2013_nagahara_monotone_splines_linear, 2004_zhang_monotone_splines, 1998_he_monotone_spline}. Similar to Bernstein polynomials, these methods use explicit constraints on an optimization problem to ensure monotonicity constraints. They have similar issues to Bernstein polynomials for application to our problem. Absolute monotonicity constraints are not discussed in the literature and would be even harder to implement for spline interpolation, if possible at all. Degree constraints are even harsher than Bernstein polynomial methods, with a degree of 3 used frequently in the literature, which is considered insufficient to represent functions like (hyper-)exponentials with significantly more aggressive growth patterns. They are also nonparametric with the number of parameters being highly correlated with the quality of the approximation.\\
 
 This method is more promising in terms of approximation capability and performance than other methods and relatively easy to implement, so we implemented it with degree 3 and convexity constraints for comparison, even if it does not satisfy all of the conditions of our problem.
 
 \subsubsection{Greedy lowballing monomial sums}
 \label{greedy_lowballing}
 
-To the best of our knowledge, there is no significant literature on the use of greedy algorithms for polynomial fitting. To a large degree, this makes sense: the general polynomial fitting problem is unstable and must be solved holistically for satisfactory solutions, lacking any significant stable structure that can be exploited to iteratively build approximations that consistently improve. Moreover, without further constraints, global solvers, including some of the ones discussed so far, work efficiently and effectively, so there is no reason for slower methods with fewer guarantees.\\
+We are not aware of literature on the use of greedy algorithms for polynomial fitting in similar problems. To a large degree, this makes sense: the general polynomial fitting problem is unstable and must be solved holistically for satisfactory solutions, lacking any significant stable structure that can be exploited to iteratively build approximations that consistently improve. Moreover, without further constraints, global solvers, including some of the ones discussed so far, work efficiently and effectively, so there is no reason for slower methods with fewer guarantees.\\
 
-However, in the particular context of the problem presented in this paper, we argue that a greedy approach is attractive. From the point of view of the (semi-)parametric goal, producing a polynomial one monomial at a time slowly approaching the target allows us to select a limited number of monomials to include in the final solution, reducing the quality of the approximation in a measured way in order to obtain a simpler solution expression. Perhaps more importantly, the absolutely monotonic constraints, together with the asymmetric loss favouring underestimation, lend themselves to an iterative {\emph{lowballing}} approach, where we slowly add terms, always underestimating the solution by smaller and smaller amounts at each step.\\
+However, in the particular context of the problem presented in this paper, we argue that a greedy approach is attractive. From the point of view of the (semi-)parametric goal, producing a polynomial one monomial at a time slowly approaching the target allows us to select a limited number of monomials to include in the final solution, reducing the quality of the approximation in a measured way in order to obtain a simpler solution expression. Perhaps more importantly, the absolutely monotonic constraints, together with the asymmetric loss favouring underestimation, lend themselves to an iterative {\emph{lowballing}} approach, where we slowly add terms, always underestimating the solution by smaller and smaller amounts at each step. Unlike general polynomial fitting, the positivity and underestimation constraints create a structure where partial sums remain valid approximations.\\
 
 We thus introduce the Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF) algorithm. This algorithm is highly specialised to this problem and has significant disadvantages, especially if used for more general tasks, compared to the other methods discussed in this section, but is particularly attractive to our problem in particular. We can summarize its key features as follows:
 
 \begin{itemize}
 \item The algorithm has two sets of parameters: {\emph{degrees}} and {\emph{coefficients}}, which are optimized simultaneously. Their number is not necessarily predetermined but can be limited with measured effects, making the method semi-parametric.
-\item At each iteration, we add a new monomial with a certain degree and coefficient, of the form $c_j x^{d_j}$, that minimizes the loss with respect to the remainder of the target. The same degree can be added multiple times. After each iteration, we subtract the current monomial from the target value at each point.
-\item Once an optimal degree and coefficient has been found for a given iteration, we reduce its contribution by a factor $\gamma < 1$ before subtracting it, to ensure the {\emph{lowballing}}. Together with the asymmetric loss, this ensures that the target is always underestimated, but built towards in steps that best represent the structure of the remainder. That is, we do $\prescript{j+1}{}{y_i} = \prescript{j}{}{y_i} - \gamma c_j x_i^{d_j}$.
+\item At each iteration, we add a new monomial with a certain degree and coefficient, of the form $c_j x^{d_j}$, that minimizes the loss with respect to the remainder of the target. After each iteration, we subtract the current monomial from the target value at each point.
+\item Once an optimal degree and coefficient has been found for a given iteration, we reduce its contribution by a factor $\gamma < 1$ before subtracting it, to ensure the {\emph{lowballing}}. Together with the asymmetric loss, this ensures that the target is always underestimated, but built towards in steps that best represent the structure of the remainder. That is, we do $\prescript{j+1}{}{y_i} = \prescript{j}{}{y_i} - \gamma c_j x_i^{d_j}$. This lowballing aspect means that the same degree may need to be added multiple times, but gives space for changing the preferred degree in subsequent iterations without overcommitting to a single one too early, ensuring a more balanced mixture that approximates the function better across the domain.
 \item $\gamma$ is increased at each iteration, approaching $1$ over time, to slowly converge to a full solution.
-\item We accumulate the coefficients and degrees, and once a certain threshold of approximation or a threshold for small coefficients are surpassed, the algorithm stops. We filter excessively small resulting coefficients and/or limit to a certain number of highest coefficients for an efficient parametric final expression. We note that $0^d = 0$ and $1^d = 1$ for all $d$, which means that the coefficients of different degrees are comparable in scale when fitting in the $[0,1]$ interval.
+\item We accumulate the coefficients and degrees, and once a certain threshold of approximation or a threshold for small coefficients are surpassed, the algorithm stops. We filter excessively small resulting coefficients and/or limit to a certain number of highest coefficients for an efficient parametric final expression. We note that $0^d = 0$ and $1^d = 1$ for all $d$, which means that the coefficients of different degrees are comparable in scale when fitting in the $[0,1]$ interval: different degrees merely represent different shapes (higher degree corresponding to more curved and concentrated growth towards $1$).
 \end{itemize}
 
 Among important disadvantages of this approach compared to other discussed ones, we include computational inefficiency due to the greedy nested optimization pattern and dependence on hyperparameter choice and data particularities in the overall result. However, unlike all the other discussed methods, this method simultaneously ensures absolute monotonicity by construction, behaves particularly well with asymmetric loss due to its inherent asymmetric nature, and produces semi-parametric outputs that can easily be limited to a small number of parameters with measured effects.\\
@@ -217,6 +267,8 @@ Among important disadvantages of this approach compared to other discussed ones,
 We implemented this method and consider it the one to best satisfy our particular problem, having potential for use in other variations, while having significant disadvantages outside of its scope.
 
 \subsection{Summary}
+
+The following table qualitatively summarizes our discussion on the considered approaches and explain our choices.
 
 \begin{center}
 \makebox[0.1cm]
@@ -226,9 +278,9 @@ We implemented this method and consider it the one to best satisfy our particula
 \hline
 {\bf{Method}}&{\bf{Representation}}&{\bf{Monotonicity}}&{\bf{Optimality}}&{\bf{Hyperparams}}&{\bf{Noise}}&{\bf{Loss}}&{\bf{Sampling}}&{\bf{Parametric}}&{\bf{Performance}}&{\bf{Complexity}}\\
 \hline
-Prony methods \S \ref{exponential_sums}&\emoji{warning}Exponential only&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{check-mark-button}Yes&\emoji{check-mark-button}Irrelevant&\emoji{x}Highly sensitive&\emoji{x}Fixed target&\emoji{x}Fixed&\emoji{check-mark-button}Parametric&\emoji{check-mark-button}Fast&\emoji{blue-circle}Medium\\
+Prony methods \S \ref{exponential_sums}&\emoji{blue-circle}Complete with appropriate change of variables and constraints&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{check-mark-button}Yes&\emoji{check-mark-button}Irrelevant&\emoji{x}Highly sensitive&\emoji{x}Fixed target&\emoji{x}Fixed&\emoji{check-mark-button}Parametric&\emoji{check-mark-button}Fast&\emoji{blue-circle}Medium\\
 \hline
-Non-linear least squares exponential sums \S \ref{exponential_sums}&\emoji{warning}Exponential only&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{warning}Local optima&\emoji{warning}Sensitive&\emoji{warning}Sensitive&\emoji{blue-circle}Flexible, but affected&\emoji{check-mark-button}Any&\emoji{check-mark-button}Parametric&\emoji{blue-circle}Moderate&\emoji{check-mark-button}Low\\
+Non-linear least squares exponential sums \S \ref{exponential_sums}&\emoji{blue-circle}Complete with appropriate change of variables and constraints&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{warning}Local optima&\emoji{warning}Sensitive&\emoji{warning}Sensitive&\emoji{blue-circle}Flexible, but affected&\emoji{check-mark-button}Any&\emoji{check-mark-button}Parametric&\emoji{warning}Problematic&\emoji{check-mark-button}Low\\
 \hline
 Constrained piecewise linear interpolation\S \ref{piecewise_interpolation}&\emoji{x}Not differentiable&\emoji{warning}Convex&\emoji{check-mark-button}Yes&\emoji{check-mark-button}Irrelevant&\emoji{blue-circle}Robust&\emoji{check-mark-button}Flexible&\emoji{check-mark-button}Any&\emoji{x}Nonparametric&\emoji{check-mark-button}Fast&\emoji{check-mark-button}Low\\
 \hline
@@ -236,20 +288,20 @@ Shape-constrained Bernstein polynomials \S \ref{bernstein_polynomials}&\emoji{wa
 \hline
 Precisely sampled Bernstein polynomials \S \ref{bernstein_polynomials}&\emoji{blue-circle}Selected degree&\emoji{blue-circle}Inherited from source function&\emoji{check-mark-button}Yes&\emoji{check-mark-button}Irrelevant&\emoji{x}Highly sensitive&\emoji{x}Fixed target&\emoji{x}Fixed&\emoji{x}Nonparametric&\emoji{blue-circle}Moderate&\emoji{blue-circle}Medium\\
 \hline
-Constrained Vandermonde \S \ref{vandermonde}&\emoji{warning}Limited degree&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{warning}Local optima&\emoji{warning}Sensitive&\emoji{warning}Sensitive&\emoji{blue-circle}Flexible, but affected&\emoji{check-mark-button}Any&\emoji{blue-circle}Semi-parametric&\emoji{warning}Suboptimal&\emoji{check-mark-button}Low\\
+Constrained Vandermonde \S \ref{vandermonde}&\emoji{warning}Limited degree&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{warning}Local optima&\emoji{warning}Sensitive&\emoji{warning}Sensitive&\emoji{blue-circle}Flexible, but affected&\emoji{check-mark-button}Any&\emoji{blue-circle}Semi-parametric&\emoji{warning}Problematic&\emoji{check-mark-button}Low\\
 \hline
 Convex splines\S \ref{convex_splines}&\emoji{warning}Very limited degree&\emoji{warning}Convex&\emoji{check-mark-button}Yes&\emoji{warning}Sensitive&\emoji{blue-circle}Robust&\emoji{blue-circle}Flexible, but affected&\emoji{check-mark-button}Any&\emoji{x}Nonparametric&\emoji{warning}Affected by degree and constraints&\emoji{blue-circle}Medium\\
 \hline
-Greedy lowballing monomial sums \S \ref{greedy_lowballing}&\emoji{blue-circle}Highly flexible, constrained by number of parameters&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{warning}No&\emoji{warning}Sensitive&\emoji{blue-circle}Moderately robust&\emoji{check-mark-button}Specialised fit&\emoji{check-mark-button}Any&\emoji{blue-circle}Semi-parametric&\emoji{warning}Inefficient&\emoji{check-mark-button}Low\\
+Greedy lowballing monomial sums \S \ref{greedy_lowballing}&\emoji{blue-circle}Highly flexible, constrained by number of parameters&\emoji{check-mark-button}Absolutely monotonic, by construction&\emoji{warning}No&\emoji{warning}Sensitive&\emoji{blue-circle}Moderately robust&\emoji{check-mark-button}Specialised fit&\emoji{check-mark-button}Any&\emoji{blue-circle}Semi-parametric&\emoji{warning}Problematic&\emoji{check-mark-button}Low\\
 \hline
 \end{tabular}
 }
 }
 \end{center}
 
-GLAMPF is the only method that has good representation of the target function family and absolute monotonicity guarantees. The only other method with good qualities in these columns are precisely sampled Bernstein polynomials , which are completely infeasible due to fixed sampling, nonparametric nature, and no space for an asymmetric loss function. In exchange, our method does not guarantee optimality, is sensitive to hyperparameters, and is computationally inefficient. These are all issues that we are prepared to accept for our target problem.
+GLAMPF has good representation of the target function family and absolute monotonicity guarantees. The only other methods with good qualities in these columns are Prony methods and precisely sampled Bernstein polynomials, which are completely infeasible due to fixed sampling, nonparametric nature, and no space for an asymmetric loss function; as well as non-linear least squares exponential sums, which have issues with noise sensitivity and asymmetric loss functions. In exchange, our method does not guarantee optimality, is sensitive to hyperparameters, and is computationally inefficient. These are all issues that we are prepared to accept for our target problem.
 
-Non-linear least squares exponential sums and Vandermonde interpolation with positivity constraints are the only two other methods with acceptable combinations of properties for our problem, and both have significant disadvantages with respect to GLAMPF.
+Non-linear least squares exponential sums and Vandermonde interpolation with positivity constraints are the only two other methods with acceptable combinations of properties for our problem, and both have significant disadvantages with respect to GLAMPF. To the best of our knowledge, no existing method simultaneously satisfies absolute monotonicity by construction, robustness to noisy non-uniform samples, compatibility with asymmetric loss, and a low-dimensional parametric representation.
 
 \section{Evaluation}
 \label{evaluation}
@@ -268,7 +320,7 @@ In order to compare their performance, we evaluate these on multiple source func
 
 We use a broad range of source functions to test the limits of each method:
 \begin{itemize}
-\item \itemtitle{Absolutely monotonic functions} The core target of this article.
+\item \itemtitle{Absolutely monotonic functions} The core target of this paper.
 \begin{itemize}
 \item \itemtitle{(Hyper)-exponentials} Theoretically need infinite Taylor series but we should be able to approximate well with fewer parameters. Variety of more and less intense growth patterns.
 \begin{itemize}
@@ -284,7 +336,7 @@ We use a broad range of source functions to test the limits of each method:
 \item $f_7(x) = x^{200}$
 \end{itemize}
 \end{itemize}
-\item \itemtitle{Convex but not absolutely monotonic functions} We evaluate these to see how well methods constrained to absolutely monotonic solutions can perform in them, where convex methods' additional flexibility should be benefitial.
+\item \itemtitle{Convex but not absolutely monotonic functions} We evaluate these to see how well methods constrained to absolutely monotonic solutions can perform in them, where convex methods' additional flexibility should be beneficial.
 \begin{itemize}
 \item \itemtitle{Convex polynomials} Limited non-zero derivatives.
 \begin{itemize}
@@ -306,6 +358,15 @@ We use a broad range of source functions to test the limits of each method:
 \label{results}
 
 Figure \ref{evaluation_metrics_sample} summarizes the evaluation metrics with respect to the noisy sample data. Emphasized are values that are particularly poor compared to other results for the same sample. Perhaps more interestingly, figure \ref{evaluation_metrics_source} summarizes the metrics with respect to the source function. Figures \ref{nmse_plot} and \ref{loss_plot} show this general comparison graphically on a logarithmic scale.\\
+
+Key observations include:
+
+\begin{itemize}
+\item GLAMPF is the most robust approach.
+\item GLAMPF performs best on functions requiring high degree representation.
+\item Convex splines offer the best results when low degrees are sufficient.
+\item Constrained Vandermonde approximation is significantly worse than other approaches.
+\end{itemize}
 
 \begin{figure}
 \caption{\label{evaluation_metrics_sample}Evaluation metrics with respect to noisy sampled data.}
@@ -379,7 +440,7 @@ $f_{11}(x) = 4x^2 \{x \in [0,0.5]\}, 4x - 1 \{x \in [0.5,1]\}$&\tscinot{2.38}{-5
 \includegraphics[width=1.1\textwidth]{plots/plot_loss_comparison_2026-03-22 02-17-38.670126.png}
 \end{figure}
 
-Piecewise linear interpolation performs quite well in some cases but is only considered as a comparison element, since it fails to satisfy two of the most core requirements of our problem statement: smoothness and absolute monotonicity. Generally speaking, the constrained Vandermonde approximation fit through non-linear least squares performs significantly worse than all other methods. Its simultaneous fitting approach struggles with the constraints and fails to fit all degree ranges simultaneously. This can be observed in test cases by noticing that it either underestimates too much on lower values, which is better approximated with low degree polynomials (see figure \ref{x2_plot}), or it underestimates too much near 1, which is better approximated with high degree polynomials (see figure \ref{eex_plot}).\\
+Piecewise linear interpolation performs quite well in some cases but is only considered as a comparison element, since it fails to satisfy two of the most core requirements of our problem statement: smoothness and absolute monotonicity. Generally speaking, the constrained Vandermonde approximation fit through non-linear least squares performs significantly worse than all other methods. A global optimization must simultaneously accommodate low and high degree structure with underestimation constraints, leading to systematic bias in one regime or the other. This can be observed in test cases by noticing that it either underestimates too much on lower values, which is better approximated with low degree polynomials (see figure \ref{x2_plot}), or it underestimates too much near 1, which is better approximated with high degree polynomials (see figure \ref{eex_plot}).\\
 
 \begin{figure}
 \caption{\label{x2_plot}Vandermonde underestimates on lower values}
@@ -393,7 +454,7 @@ Piecewise linear interpolation performs quite well in some cases but is only con
 \includegraphics[width=\textwidth]{plots/plot_e(ex) - normalized_2026-03-21 18-35-27.018168.png}
 \end{figure}
 
-With a few exceptions, evaluation on the source function is better than on the sample. This indicates that all methods are capable of capturing the underlying structure of the function and abstracting away from the noise and specific sample. The main exceptions happen with the piecewise linear approach, which is to be expected due to having a higher number of parameters and fewer constraints, and in the cases where very high degree polynomials are required to represent the underlying functions (specifically $f_3={{e^{e^{e^x}} - e^e} \over {e^{e^{e}} - e^e}}$ and $f_7 = x^{200}$).
+With a few exceptions, evaluation on the source function is better than on the sample. This indicates that all methods are capable of capturing the underlying structure of the function and abstracting away from the noise and specific sample (overfitting is low for the most part), arguably as a product of implicit regularization induced by absolute monotonicity and loss asymmetry. The main exceptions happen with the piecewise linear approach, which is to be expected due to having a higher number of parameters and fewer constraints, and in the cases where very high degree polynomials are required to represent the underlying functions (specifically $f_3={{e^{e^{e^x}} - e^e} \over {e^{e^{e}} - e^e}}$ and $f_7 = x^{200}$).
 
 The high degree dependence is particularly noticeable in the variation across methods. Convex splines perform best of all tested methods as long as high degrees are not required, but lose significant representation capability otherwise. Conversely, GLAMPF performs particularly well compared with the other methods precisely in the cases where a high degree flexibility is required, while performing reasonably well in other cases. For example, in figure \ref{x5x4x3x_plot} we can observe the dominance of convex splines over GLAMPF even in absolutely monotonic cases when low degree is sufficient. However, in very high growth cases like figures \ref{eeex_plot}, \ref{x71_plot}, and \ref{x200_plot}, convex splines completely fails to fit the higher end of the curve while GLAMPF performs surprisingly well.\\
 
@@ -435,20 +496,20 @@ Unsurprisingly, GLAMPF performs significantly worse in the non-absolutely monoto
 \includegraphics[width=\textwidth]{plots/plot_4x^2 {[0,0.5]} -- 4x-1 {[0.5,1]}_2026-03-21 18-36-28.269647.png}
 \end{figure}
 
-A consistent issue that particularly affected GLAMPF, is the overfitting to high noise values near 1 (tail). This is not an easy to solve issue, because this is fundamentally indistinguishable from high degree components in the underlying function's Taylor series. For intermediate values, noise can be avoided by bridging between lower and higher values in a consistent ways, but when there are no higher values to bridge to, the noise can easily be interpreted as an additional high degree term. This effect can be noticed for example in figure \ref{x2-x3_plot}.\\
+A consistent issue that particularly affected GLAMPF, is the overfitting to high noise values near 1 (tail). This is not an easy to solve issue, because this is fundamentally indistinguishable from high degree components in the underlying function's Taylor series. For intermediate values, noise can be avoided by bridging between lower and higher values in consistent ways, but when there are no higher values to bridge to, the noise can easily be interpreted as an additional high degree term. This is not merely an artifact of the algorithm, but an identifiability limitation inherent to the representation. This effect can be noticed for example in figure \ref{x2-x3_plot}.\\
 
 Considering that, out of the tested methods, constrained Vandermonde and GLAMPF are the only two that guarantee smoothness and absolute monotonicity, we consider these results provide good evidence of the appropriateness of GLAMPF, even when in some particular cases other methods may perform better, and that GLAMPF never performs catastrophically, if the underlying source function is indeed absolutely monotonic.
 
 \section{Conclusion}
 \label{conclusion}
 
-In \S \ref{approaches}, we discussed the reasons why polynomial methods are preferred to other methods for fitting absolutely monotonic functions in bounded intervals. Moreover, we justified why most of the existing approaches to this problem are not very suitable. We evaluated a few of the approaches that were potentially promising. Convex splines perform extremely well as long as the underlying function does not have fast growth patterns that require high degree polynomials to represent. Our newly introduced method of greedy lowballing absolutely monotonic polynomial fitting shows significant flexibility to all types of absolutely monotonic functions and even acceptable results on other convex but not absolutely monotonic functions. It is particularly effective at detecting high growth patterns near 1. However, it does not produce optimal results in most cases and frequently shows some level of underestimation in low or mid range values.\\
+In \S \ref{approaches}, we discussed the reasons why polynomial methods are preferred to other methods for fitting absolutely monotonic functions in bounded intervals. Moreover, we justified why most of the existing approaches to this problem are not particularly well suited. We evaluated a few of the approaches that were potentially promising. Convex splines perform extremely well as long as the underlying function does not have fast growth patterns that require high degree polynomials to represent. Our newly introduced method of greedy lowballing absolutely monotonic polynomial fitting shows significant flexibility to all types of absolutely monotonic functions and acceptable results on other convex but not absolutely monotonic functions. It is particularly effective at detecting high growth patterns towards the higher end of the interval. However, it does not produce optimal results in most cases and frequently shows some level of underestimation in low or mid range values.\\
 
-The significant differences in results of the various methods linked to the growth patterns suggests ideas for future work that combine the strengths of multiple approaches. For example, a hybrid algorithm that attempts multiple methods, including some not implemented here, such as exponential sums, and selects the one that performed best for the particular data presented, could potentially perform extremely well. Similarly, the greedy approach could be extended beyond polynomials to consider exponential or hyperexponential terms. Dynamically adjusting the degree of splines or Bernstein polynomials, or dynamically adjusting growth constraints in some of these methods, could lead to a broader and more effective search process that finds a more suitable representation of the data in a wider variety of cases.\\
+The significant differences in results of the various methods linked to the growth patterns suggests ideas for future work that combine the strengths of multiple approaches. For example, a hybrid algorithm that attempts multiple methods, including some not implemented here, and selects the one that performed best for the particular data presented, could potentially perform extremely well. Similarly, the greedy approach could be extended to consider exponential or hyperexponential terms, under the change of variables discussed in \S \ref{exponential_sums} and/or in combination with polynomial terms in the same sum. Dynamically adjusting the degree of splines or Bernstein polynomials, or dynamically adjusting growth constraints in some of these methods, could lead to a broader and more effective search process that finds a more suitable representation of the data in a wider variety of cases.\\
 
-The issues with the approaches described here can be summarized in two families: unsuitable constraints and assumptions for the specific underlying function, and non-optimal methods that do not produce the best results possible. Most of the approaches discussed can be clearly associated with at least one of these limitations, so the combination of both or the dynamic adjustment of constraints and assumptions depending on results could potentially find a better balance in more varied cases.\\
+The issues with the approaches described here can be summarized in two families: unsuitable constraints and assumptions for the specific underlying function, and non-optimal methods that do not produce the best results possible. This contrast suggests that there is a fundamental trade-off between expressivity for high-growth behavior and stability / optimality under constraints. The combination of both or the dynamic adjustment of constraints and assumptions depending on results could potentially find a better balance in more varied cases.\\
 
-For the time being and the target problem discussed in \S \ref{problem_statement}, we believe that while sometimes suboptimal, GLAMPF offers the most robust results and strongest properties of the resulting function.
+At present and for the problem of fitting absolutely monotonic functions under noisy, non-uniform sampling and asymmetric loss, we conclude that GLAMPF offers the most robust results and strongest compliance of the constraints.
 
 \dobibliography
 
