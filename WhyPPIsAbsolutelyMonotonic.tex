@@ -1,0 +1,60 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
+
+\input{include.tex}
+
+\title{Why PP curves must be absolutely monotonic: A probabilistic argument}
+\author{Undeceiver}
+
+\begin{document}
+
+\maketitle
+
+%\tableofcontents
+
+%\section{First section}
+
+Consider a specific player playing a specific map, and consider the probabilistic process of that player making attempts at the map. The only assumption we need to make is that each individual score point in the map is equally difficult to obtain. This is not, in general, true, but it can be argued to not be far from reality when considering a couple of things:
+\begin{itemize}
+\item In many circumstances, the basic pre-swing and post-swing scores can be considered relatively safe so it's a constant in the score that all other scores get added to. They can be discounted, to some degree.
+\item While faster and more difficult parts may make it harder to hit accurately, they also usually have more points in them, so the score balances to some degree around hard parts.
+\end{itemize}
+
+That said, it is definitely not true in general, however we consider it to be close enough and use it as an assumption for the remainder of this document.\\
+
+If each individual score point is equally difficult, then the distribution of scores for that player in that map is {\emph{memoryless}}\footnote{\url{https://en.wikipedia.org/wiki/Memorylessness}}, because at any given point, success up to that point does not change the probability of success in the next instant. This means that the distribution of scores for each specific player on each specific map must be an exponential distribution. This only works up to the maximum socre of the map, though ($x = 1$), after which point no more potential points exist. That is, the distribution is, in fact, a truncated exponential distribution.
+
+Consider what happens when the player repeatedly attempts the map while trying to achieve a score above a certain point $x$. The probability of each attempt succeeding in this way corresponds to the survival function of the truncated exponential distribution $P(\text{score} \geq x) = e^{-tx}$, for $0 \leq x \leq 1$ for a certain parameter $t$. This parameter encodes the relationship between the difficulty of the map and the skill of the player (how hard is it to improve the score on the map for the player). We can ask, how many attempts does a player need to do, on average, before succeeding to obtain a score above $x$? If each attempt has probability $e^{-tx}$, then on average the player will need to do ${{1} \over {e^{-tx}}} = e^{tx}$ attempts to succeed.\\
+
+Now consider all possible players playing this same map. Each of them will have a different value of the parameter $t$, which we can describe as a probability measure $\mu(t)$ describing the distribution of player skills on this map. We can then calculate the average number of attempts that a random player will need to do to obtain a score above $x$ on the map. This will be $\mathbb{E}_t(e^{tx}) = \int_0^{\infty} e^{tx} d \mu(t)$. We will call this the {\emph{cost}} associated with score $x$ on this map. $C(x) = \int_0^{\infty} e^{tx} d \mu(t)$.
+
+$C(x)$ must be absolutely monotonic (all of its derivatives must be positive for all $x$)\footnote{\url{https://en.wikipedia.org/wiki/Absolutely_and_completely_monotonic_functions_and_sequences}} by definition (non-negative mixture of positive exponentials).\\
+
+Now we will justify why $C(x)$ is a good way to understand what the PP curve of a map should be. As shown, it describes the {\bf{average number of attempts that a random player will need to do to obtain a score above $x$ on the map}}, so:
+
+\begin{itemize}
+\item It relates to the map.
+\item It relates to the score.
+\item It is averaged across all players.
+\item It effectively indicates {\emph{how much grinding}} would an average player need to obtain that score.
+\end{itemize}
+
+But there is one important property above all of these that makes this a good PP curve: {\bf{It behaves additively}}. Consider a player grinding two different maps, with cost curves $C_1(x)$ and $C_2(x)$. The player obtains a score $x_1$ on map 1, and a score $x_2$ on map 2. Then, the {\bf{sum}} of the value of these functions on both maps: $C_1(x_1) + C_2(x_2)$ is the {\bf{average number of attempts that a random player will need to obtain both of those scores independently}}. In other words, the cost function adequately maps effort or reward as an additive measure across maps.\\
+
+In summary, this way of understanding PP curves:
+
+\begin{itemize}
+\item Provides a principled probabilistic interpretation for what they mean: the average number of attempts required to obtain a score.
+\item Relies only on the assumption that each point that matters in a map is equally difficult to obtain.
+\item Is valid for any particular distribution of player skills on the map: these will change the measure $\mu$ and therefore change the shape of the curve, but they will all be absolutely monotonic.
+\item Absolute monotonicity is a very strong shape constraint that results in functions of the shape that we would expect on a PP curve (much higher rewards near top scores).
+\item Justifies the additive nature of PP scores, so there is a probabilistic meaning to adding together PP scores of the same player on different maps, related to the total effort required to obtain those scores.
+\end{itemize}
+
+%\dobibliography
+
+\end{document}
