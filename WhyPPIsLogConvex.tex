@@ -1,0 +1,96 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
+
+\input{include.tex}
+
+\title{Why reward curves in Beat Saber maps should be logarithmically convex: A probabilistic argument}
+\author{Juan Casanova}
+
+\begin{document}
+
+\maketitle
+
+%\tableofcontents
+
+\section{A player making attempts on a map}
+
+Consider a specific player $p$ playing a specific map $m$, and consider the probabilistic process of that player making attempts at the map. The score on the map is approximately the sum of scores on individual notes, which are themselves the sum of several components (pre- and post-swing scores, accuracy). Write down $S_{p,m}^i$, for $i=1..N$ to indicate the random variables that measure the $N$ score components of a map. Each of these has a different distribution, but we can relatively safely assume two things about them:
+\begin{itemize}
+\item {\bf{They are independent.}}
+This is not entirely true in practice as multiple components of the same note are not entirely independent, and notes close in time or similar in their nature might have dependency between them. However, since we are conditioning on the player $p$, and aggregating a large amount of scores, it is very close to entirely accurate to assume independence between each of these variables across attempts of the same player on the same map. Getting a higher or lower score on each note is not strongly related to other notes on the same attempt.
+\item {\bf{They have an Increasing Failure Rate (IFR).}}
+This means that the higher the score on that component, the harder (more unlikely) it is to obtain a better score on that same component. That is, the difference in difficulty between hitting a 14 and a 15 in accuracy is at least as large or larger than the difference between hitting a 10 and hitting an 11. The hazard rate of a random variable $T$ is defined as
+\begin{equation}
+h_T(s) = \lim\limits_{\epsilon \to 0^{+}} \frac{P(s < T < s +\epsilon | s < T)}{\epsilon}
+\end{equation}
+
+\noindent and it represents the average probability of failure in the infinitesimal interval starting at score $s$. Note that since our variable is the score, and not time, failure in this instance means being unable to improve the score further from the current score $s$. $T$ is IFR if $h_T$ is increasing ($h^{\prime}_T(s) > 0$), and we can express the survival rate like so \cite{2022_navarro_reliability_theory}:
+\begin{equation}
+R(t) = P(T > s) = e^{-\int\limits_0^s h_T(x) dx}
+\end{equation}
+\end{itemize}
+
+Note that in our case, the survival rate of each component of the score $R_{p,m}^i(s) = P(S_{p,m}^i > s)$ is the probability that the player will obtain a score of at least $s$ on that component of the score each time they attempt it. We can then consider the random variable $S_{p,m}^{*} = \sum\limits_{i=1}^N S_{p,m}^i$ representing the total score of the player in the map, and its survival rate $R_{p,m}^{*}(s) = P(S_{p,m}^{*} > s)$ is the probability that the player will obtain a score of at least $s$ each time they attempt the map.
+
+With the two assumptions above about the independent components, $S_{p,m}^{*}$ will also have an Increasing Failure Rate \cite{1975_holt_statistical_theory_reliability}. A conceptual explanation of the preservation of IFR on the sum of independent random variables is that lower sums will typically be related with scores achieved on the {\emph{easier}} parts of the map, with normally only the {\emph{harder}} parts being left. Therefore, increasing the score on the map when the score is already higher will typically be more associated with the terms in the sum that are less likely to be high, and therefore there is an increased difficulty (hazard rate) at that point. Thus, the hazard rate for the sum increases. More formally, this relates to the fact that IFR variables correspond to variables with logarithmically concave survival function $R(s)$, and sum of random variables corresponds to the convolution of their density functions, which preserves logarithmic concavity of the survival functions. Therefore, we can write
+\begin{equation}
+R_{p,m}^{*}(s) = e^{-\int\limits_0^s h_{p,m}(x) dx}
+\end{equation}
+
+\noindent for increasing hazard rate $h_{p,m}(s)$.\\
+
+The key fact that we carry over from this section is that {\bf{the probability of a specific player achieving a score of at least $s$ on a specific map on random attempts, as a function $R_{p,m}^{*}(s)$, is logarithmically concave}}.\\
+
+\section{Counting attempts}
+
+Consider what happens when the player repeatedly attempts the map while trying to achieve a score above a certain value $s$. This becomes a Bernoulli process with the probability of each attempt being $R_{p,m}^{*}(s)$, and {\emph{the number of attempts}} required to obtain a score above $s$ becomes a geometric random variable with average
+\begin{equation}
+A_{p,m}(s) = \frac{1}{R_{p,m}^{*}(s)} = \frac{1}{e^{-\int\limits_0^s h_{p,m}(x) dx}} = e^{\int\limits_0^s h_{p,m}(x) dx}
+\end{equation}
+
+We note that $A_{p,m}(s)$ is a logarithmically convex function (its logarithm is a convex function, because $h_{p,m}(s)$ is increasing).
+
+\section{Averaging across all players}
+
+Now consider all possible players playing this same map. Each of them will have a different hazard rate $h_{p,m}$, and we can describe their distribution with a measure $\mu(p)$. We can then calculate the average number of attempts that a random player will need to do to obtain a score above $s$ on the map. This will be $C_m(s) = \mathbb{E}_p(R_{p,m}^{*}(s)) = \int\limits_p e^{\int\limits_0^s h_{p,m}(x) dx} d\mu(p)$. We will call this the {\emph{cost}} associated with score $s$ on this map.\\
+
+$C_m(s)$ is also logarithmically convex. This comes from the fact that each $R_{p,m}^{*}(s)$ is logarithmically convex, and that the logarithm of the cost $\log C_m(s) = \log \int\limits_p e^{\int\limits_0^s h_{p,m}(x) dx} d\mu(p)$ is a {\emph{log-partition}} or {\emph{log-sum-exp}} of convex functions $\int\limits_0^s h_{p,m}(x) dx$. The log-sum-exp of convex functions is itself a convex function, and therefore the logarithm of the cost is convex \cite{2004_boyd_convex_optimization}.
+
+\section{Cost is a useful measure of map difficulty}
+
+$C_m(s)$ is a good choice for a reward curve of a map. As shown, it describes the {\bf{average number of attempts that a random player will need to do to obtain a score above $s$ on the map}}. This means that:
+
+\begin{itemize}
+\item It relates to the map.
+\item It relates to the score.
+\item It is averaged across all players.
+\item It effectively indicates {\emph{how much effort}} would an average player need to obtain that score.
+\end{itemize}
+
+This last point is important. There is no universal definition of difficulty. Attempting a map being inherently a stochastic process, and one that players {\bf{will attempt many times}}, it makes sense that the reward measurement is directly related to the cost of those attempts. If the reward scaled faster than the cost of attempting the map, it would fundamentally reward players for the simple act of attempting the score many times, even with marginal improvements, increasing the feeling of grind. If the reward scaled slower than the cost of attempting the map, it would disincentivize players from attempting better scores, feeling like rewards are fundamentally undervalued. Obviously these effects would be dampened by the fact that higher scores would still correspond to higher rewards, but we argue that linking it to the number of attempts makes the actual process of attempting better scores on a map feel like it has the right reward.\\
+
+But there is one important property above all of these that makes the cost function a good reward curve: {\bf{It behaves additively across different maps}}. Consider a player grinding two different maps, with cost curves $C_{m_1}(x)$ and $C_{m_2}(x)$. The player obtains a score $s_1$ on map 1, and a score $s_2$ on map 2, separately (attempts for each map are not linked). Then, the {\bf{sum}} of the value of these functions on both maps: $C_{m_1}(s_1) + C_{m_2}(s_2)$ is the {\bf{average number of attempts that a random player will need to obtain both of those scores separately}}. In other words, the cost function adequately maps effort or reward across maps, so that the reward obtained by achieving two scores as a sum of rewards is also the number of attempts required to obtain those two scores separately.\\
+
+\section{The value of logarithmic convexity}
+
+The assumption that reward curves are logarithmically convex means that they can be estimated using shape-constrained regression from scores. Logarithmic convexity is a relatively straightforward shape constraint that can be optimized by focusing on the logarithm of the function and imposing basic convexity constraints. Many optimization algorithms are equipped to effectively deal with this problem.
+
+\section{Summary}
+
+In summary, this way of understanding reward curves:
+
+\begin{itemize}
+\item Provides a principled probabilistic interpretation for what they mean: the average number of attempts required to obtain a score.
+\item Will be logarithmically convex so long as it is an independent sum of individual scores that have increasing failure rates, which is a very basic assumption.
+\item Is valid for any particular distribution of player skills on the map: these will change the measure $\mu$ and therefore change the shape of the curve, but they will all be logarithmically convex.
+\item Logarithmic convexity is a strong and easy to fit shape constraint that results in functions of the shape that we would expect on a reward curve (much higher rewards near top scores).
+\item Justifies the additive nature of rewards, so there is a probabilistic meaning to adding together rewards for scores of the same player on different maps, related to the total effort required to obtain those scores.
+\end{itemize}
+
+\dobibliography
+
+\end{document}
