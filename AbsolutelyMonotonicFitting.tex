@@ -36,79 +36,61 @@ We discuss the problem of fitting absolutely monotonic functions to noisy random
 
 \section{Introduction}
 
-\subsection{Motivating problem: reward curves}
+{\emph{Shape constraints}} are used when fitting real functions to data points in order to enforce certain growth, geometric, or analytical properties on the estimated functions, that are assumed to hold for the underlying true function and/or represent useful properties of the goal solution to the fitting problem. The most typical shape constrained families of functions include {\emph{increasing}} and {\emph{convex}} functions. Shape constraints can have multiple related characterizations. For example, smooth increasing and convex functions can be characterized by positive first and second derivatives, respectively. Convex smooth functions, and in particular fitting convex smooth functions to data, have been studied extensively \cite{2001_groeneboom_estimation_convex_function, 2015_lu_spline_monotonic_regression, 2015_lebair_derivative_constrain_spline, 2013_nagahara_monotone_splines_linear, 2004_zhang_monotone_splines, 1998_he_monotone_spline, 2008_aguilera_approximating_optimization_convex_functions, 2013_hannah_multivariate_convex_regression, 2002_holmstr_parameter_estimation_fitting_exponentials, 2005_lachand_minimizing_convex_bodies, 2011_kopotun_shape_preserving_approximation_algebraic_polynomials, 2012_wang_shape_regression_bernstein, 2023_ghosal_shape_regression_bernstein} due to the multitude of applications in economics, statistics, machine learning, etc.\\
 
-The motivating problem for this paper is the production of {\emph{reward curves from scores in a competitive single player game}}. Specifically, Beat Saber\footnote{\url{https://beatsaber.com/}} is a virtual reality rhythm game released in 2018 in which players play single player maps with a maximum possible score, attempting to get as close as possible. Scores in Beat Saber are often represented as percentages of the maximum possible score. Beat Saber has rich scoring mechanics\footnote{\url{https://bsmg.wiki/ranking-guide.html}}, and a healthy competitive scene with upwards of 60,000 active ranked players\footnote{Verified using BeatLeader's search functionality at \url{https://beatleader.com/ranking/1?mapsType=all&recentScoreTime=1721433600}}, which can be observed through its two most popular ranked leaderboards: ScoreSaber\footnote{\url{https://scoresaber.com/}} and BeatLeader\footnote{\url{https://beatleader.xyz/}}. Competitive Beat Saber focuses on large pools of {\emph{custom}} maps made by members of the community ({\emph{mappers}}) that undergo a ranking process\footnote{\url{https://beatleader.wiki/en/ranking/Ranking-your-map}} to ensure their competitive viability. For example, BeatLeader offers over 3500 different ranked maps\footnote{\url{https://beatleader.xyz/leaderboards}}.
+A real function is {\emph{absolutely monotonic}} if all of its derivatives are non-negative. Absolutely monotonic functions are therefore increasing and convex, but not all increasing convex functions are absolutely monotonic. Absolute monotonicity is significantly restrictive, and it may appear in applications with natural strong growth patterns. For example, a function that represents the reward or performance associated with an acumulative score in a videogame level would not only need to be increasing, but may also need to significantly reward scores approaching perfect execution in a way that represents the fast and increasingly accelerating difficulty of approaching perfection closer and closer, and may be fit from data points of player performances labelled with player skill levels or proxy measurements relating to player skill. Absolutely monotonic shape-constrained estimation from fixed samples has not been studied in the same level of detail that convex estimation has, primarily due to the rigidity of absolutely monotonic constraints and that convexity is deemed sufficient for most applications. The majority of methods that ensure absolute monotonicity of the resulting functions do so {\emph{by construction}}, and usually as a side effect of tighter restrictions. For example, fitting exponential sums \cite{2002_holmstr_parameter_estimation_fitting_exponentials, 2021_keller_prony_methods,2020_chunaev_data_fitting_exponential_sums,1980_evans_least_squares_exponential_sum, 1976_smith_decomposition_exponential_decays, 1976_kammler_approximation_completely_monotonic} or Vandermonde polynomial fitting \cite{1970_bjorck_vandermonde} restricted to positive monomial coefficients. These also sometimes presume we can select the points to sample on.\\
 
-Experienced Beat Saber players observe a high diminishing returns difficulty curve. The closer to 100\%, the harder it is to improve the score further. There are exactly two 100\% scores across all ranked maps in Beat Leader (over 3500 maps, over 60,000 players), on particularly easy maps by particularly skilled players. The difference in difficulty between a 98\% and a 99\% score in a map is significantly larger than the difference between a 90\% and a 91\%. Most scores that do not fail the map are over 70\% to begin with.
+The goal of this paper is to discuss our investigation into potential approaches to fit absolutely monotonic functions to data, their strengths, weaknesses, and some simulated results. This discussion highlights the tension between less constrained methods that do not guarantee absolute monotonicity, and methods that do guarantee absolute monotonicity but are not particularly well suited for fitting from random samples. We also introduce one new method, Greedy Lowballing Absolutely Monotonic Fitting (GLAMPF), that builds on the structure of the problem while avoiding assumptions required by other methods to produce results that are frequently not optimal, but consistently reliable, as opposed to most other methods that have catastrophic failure modes.
 
-Different maps do not just have different difficulties, but also different difficulty {\emph{curves}}, with the difficulty accumulating at different relative ranges of the score spectrum, while always preserving the diminishing returns nature. The problem of finding adequate reward curves for each map is difficult and highly sought-after by the Beat Saber ranked community \cite{2025_casanova_birating}. Shape-constrained fitting from player scores is a valuable tool in this context. Naturally, a higher score should always give a higher reward (often quantified as Performance Points (PP)), introducing a growing constraint on the reward curve. Moreover, the diminishing returns nature justifies introducing further growth constraints that increase the rate at which the rewards increase. These observations suggest the need for increasingly strong shape constraints beyond monotonicity and convexity. While convexity constraints could be used, we believe that absolutely monotonic functions might more adequately reflect the ever increasingly difficult nature of approaching 100\% score in Beat Saber maps (see, for example, figure \ref{convex_not_am}). This is a choice made based on intuition and observation of how diminishing returns work in Beat Saber scores, and that convex curves would produce results that would likely be considered inadequate for a ranking system, rather than a definitive principled conclusion.\\
-
-\begin{figure}
-\caption{\label{convex_not_am}Smooth piecewise polynomial that is growing and convex but not absolutely monotonic}
-\centering
-\includegraphics[width=0.75\textwidth]{convex_not_am.png}
-\end{figure}
-
-\subsection{Absolutely monotonic functions}
-
-A real function is {\emph{absolutely monotonic}} if all of its derivatives are non-negative. Absolutely monotonic functions are therefore growing and convex, but not all growing convex functions are absolutely monotonic.\\
-
-Convex smooth functions, and in particular fitting convex smooth functions from samples, have been studied extensively \cite{2001_groeneboom_estimation_convex_function, 2015_lu_spline_monotonic_regression, 2015_lebair_derivative_constrain_spline, 2013_nagahara_monotone_splines_linear, 2004_zhang_monotone_splines, 1998_he_monotone_spline, 2008_aguilera_approximating_optimization_convex_functions, 2013_hannah_multivariate_convex_regression, 2002_holmstr_parameter_estimation_fitting_exponentials, 2005_lachand_minimizing_convex_bodies, 2011_kopotun_shape_preserving_approximation_algebraic_polynomials, 2012_wang_shape_regression_bernstein, 2023_ghosal_shape_regression_bernstein} due to the multitude of applications in economics, statistics, machine learning, etc. Like other types of {\emph{shape-constrained estimation}}, we know or wish the resulting function to fulfill certain growth or smoothness properties, but also wish to fit the available data as best as possible.\\
-
-Absolutely monotonic shape-constrained estimation from fixed samples has not been studied in the same level of detail. In general, the majority of methods that ensure absolute monotonicity of the resulting functions do so {\emph{by construction}}, and usually as a side effect of tighter restrictions. For example, fitting exponential sums \cite{2002_holmstr_parameter_estimation_fitting_exponentials, 2021_keller_prony_methods,2020_chunaev_data_fitting_exponential_sums,1980_evans_least_squares_exponential_sum, 1976_smith_decomposition_exponential_decays, 1976_kammler_approximation_completely_monotonic}. These also sometimes presume we can select the points to sample on.\\
-
-In \S \ref{approaches} we discuss many potential approaches to the motivating problem in detail, highlighting this tension between less constrained methods that do not guarantee absolute monotonicity, and methods that do guarantee absolute monotonicity but are not very well suited for fitting from random samples.
+\S \ref{problem_statement} provides a more formal description of the problem. \S \ref{approaches} explains the approaches, with their strengths and weaknesses, including the implementation of those that were implemented. \S \ref{evaluation} presents the simulation and evaluation set up for the comparison of the implemented approaches. \S \ref{results} discusses the results of the evaluation and general discussion on how different methods compare. \S \ref{conclusion} presents the conclusions from this paper.
 
 \subsection{Problem statement}
 \label{problem_statement}
 
-Given a single variable {\bf{real valued}} set of datapoints in a {\bf{bounded interval}} (we can assume $[0,1]$ without loss of generality), we consider the problem of finding {\bf{absolutely monotonic}} functions that best approximate the data. We will, however, compare with some methods that only guarantee convexity due to their prominence and to understand their relative advantages and disadvantages.
+Given a single variable {\bf{real valued}} set of datapoints in a {\bf{bounded interval}} (we assume $[0,1]$ without loss of generality), we consider the problem of finding {\bf{absolutely monotonic}} functions that best approximate the data. We will, however, compare with some methods that give weaker guarantees than absolute monotonicity, due to their prominence and to understand their relative advantages and disadvantages.
 
-We presume noise in the data. In the Beat Saber map context, the x axis indicates the score obtained in the map by the player, and the y axis indicates the reward associated with it, which in the data is represented by the player skill of the player that produced the score. The player skill of a player in a ranked setting represents {\emph{their best possible performance}}, meaning that better players can sometimes produce worse scores (e.g. not taking the map seriously, being unlucky, or having less than ideal circumstances), but it is far more unlikely that a player will produce a score above their skill level. Moreover, players can attempt maps many times, retaining only their best scores. Therefore, in most practical cases, noise in the data will have a positive bias (the skill of the player is higher than this score in this map would suggest). In other words, our estimation should ideally favour functions that {\bf{underestimate}} the data while being as accurate as possible. In order to achieve this, we use asymmetric loss functions in our methods. We consider two different asymmetric loss functions: 
-
-\begin{enumerate}
-\item Pinball loss
+We presume noise in the data, and we evaluate two different situations with respect to noise and related loss function, paying attention to the flexibility of the discussed methods with respect to unconventional optimization targets.
+\begin{itemize}
+\item First, we consider {\bf{normally distributed noise}} proportional to the function to model symmetric noise from independent sources on the data, and use a traditional {\bf{square of residuals}} loss function to fit this data.
 \begin{equation}
-\begin{array}{lll}
-l_1(r) =& \tau r &\text{if } r \geq 0\\
-& (\tau-1)r &\text{if } r < 0\\
-\end{array}
+y_i | x_i \sim f(x_i) + \mathcal{N}(0,\sigma)
 \end{equation}
-\noindent for $\tau \in [0,1]$.
-\item Soft floor
 \begin{equation}
-l_2(r) = |r| + e^{-\lambda r}
+l_1(r) = r^2
 \end{equation}
-\noindent for $\lambda > 0$.
-\end{enumerate}
 
-One final aspect to consider is how we will use the resulting estimations. Our goal is to use real score data to learn how to best describe the reward curves of different maps. The results of this could then be used to train a different model that looks at the map gameplay properties themselves to estimate those parameters without needing scores. This is useful for newly ranked maps that do not have enough scores yet but need a reward curve. Therefore, we are aiming for a {\bf{(semi-)parametric}} method that can output a bounded and small number of parameters that represents the fitted curve.\\
+\item Second, we consider {\bf{positive exponentially distributed noise}}. This can represent situations, such as the aforementioned videogame score reward case, where the target function by definition relates to best possible performances, and therefore underperforming data points would lead to positive error in the absolutely monotonic function. If the x axis is score obtained and y axis is player skill, a high-level player underperforming would have a higher player skill than their score suggests, and the target function corresponds to the best possible performances of players of a certain skill. We introduce an {\bf{asymmetric exponential penalty}} to the loss function in order to fit this data.
 
-We can summarize these properties in a single problem statement. The problem statement leaves some room for variability to consider the different approaches' advantages and disadvantages.
+\begin{equation}
+y_i | x_i \sim f(x_i) + Exp(\lambda)
+\end{equation}
+
+\begin{equation}
+l_2(r) = |r| + e^{-tr}
+\end{equation}
+\noindent for $t > 0$.
+\end{itemize}
+
+In our discussion of potential approaches, we also consider their {\emph{parametric}}, {\emph{semi-parametric}}, or {\emph{non-parametric}} nature. Parametric or semi-parametric methods may be more adequate for applications where a small, bounded number of parameters to express the resulting function is required.\\
+
+The summarized problem statement is as follows, and leaves some room for variability to consider the different approaches' advantages and disadvantages.
 
 \begin{problem}
 Given a set of real valued datapoints $\{x_i,y_i\}$, where $x_i \in [0,1]$, find a function $f \in \cinfty([0,1])$ that:
 \begin{itemize}
 \item is absolutely monotonic in $[0,1]$.
-\item approximates the datapoints as best as possible with a preference for underestimation.
-\item can be represented (semi-)parametrically with a bounded, low number of parameters.
+\item minimizes the average loss $l(y_i - f(x_i))$.
+\item can ideally be represented (semi-)parametrically with a bounded, low number of parameters.
 \end{itemize}
 \end{problem}
 
-This unusual combination of constraints cannot be directly solved using standard methods in the literature, which rarely consider absolute monotonicity, and typically use symmetric loss functions. The remainder of this document discusses several potential approaches to solving this problem (or slightly relaxed versions of it), discussing their advantages and disadvantages. We also introduce a novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF), specifically tailored for this problem. We implemented and compared some of these approaches with simulation studies.
+\section{Exponential mixtures and other characterizations of absolutely monotonic functions}
 
-\S \ref{approaches} explains the approaches, with their pros and cons, including the implementation of those that were implemented. \S \ref{evaluation} presents the simulation and evaluation set up for the comparison of the implemented approaches. \S \ref{results} discusses the results of the evaluation and general discussion on how different methods compare. \S \ref{conclusion} presents the conclusions from this paper.
+Before discussing potential approaches for fitting absolutely monotonic functions, it is relevant to discuss the mathematics behind a couple of characterizations of absolutely monotonic functions, and particularly the significant connection with exponential functions and mappings.
 
-\section{Potential approaches}
-\label{approaches}
+\subsection{Bernstein's characterization of absolutely monotonic functions in $(-\infty,0]$}
 
-We discuss a number of reasonable approaches to the presented problem, with their rationales, advantages, and disadvantages. A summary table can be found at the end of this section.
-
-\subsection{Positive sums of positive exponentials}
-\label{exponential_sums}
-
-Exponential functions with positive exponents are always absolutely monotonic. A deeply related family of functions are {\emph{completely monotonic functions}}, which are functions with alternating sign derivatives. It is easy to see that $f(x)$ is absolutely monotonic in $(a,b)$ if and only if $f(-x)$ is completely monotonic in $(-b,-a)$. Moreover, Bernstein's theorem characterizes all completely monotonic functions in $[0,+\infty)$, and consequently also all absolutely monotonic functions in $(-\infty,0]$, as sums of exponentials:
+Exponential functions with positive exponents are always absolutely monotonic. One deeply related family of functions are {\emph{completely monotonic functions}}, which are functions with alternating sign derivatives. It is easy to see that $f(x)$ is absolutely monotonic in $(a,b)$ if and only if $f(-x)$ is completely monotonic in $(-b,-a)$. Moreover, Bernstein's theorem characterizes all completely monotonic functions in $[0,+\infty)$, and consequently also all absolutely monotonic functions in $(-\infty,0]$, as sums of exponentials:
 
 \begin{theorem}[\cite{1929_bernstein_absolutely_monotonic}]
 Let $f \in \cinfty([0,+\infty))$.
@@ -128,11 +110,56 @@ f(x) = \int_0^{\infty} e^{tx}d\mu(t)
 \end{equation}
 \end{theorem}
 
-In a few words, any absolutely monotonic function in $(-\infty,0]$ can be uniquely characterised as an infinite positive sum of exponentials with positive exponents. This also forces $f$ to be analytic because the representation is analytic. The mathematical theory of completely monotonic, absolutely monotonic, and related families of functions is much broader and deeper than what we discuss or use in this paper\cite{2014_koumandos_completely_monotonic}.
+In a few words, any absolutely monotonic function in $(-\infty,0]$ can be uniquely characterised as an infinite positive sum of exponentials with positive exponents. This also forces $f$ to be analytic due to its analytic representation. The mathematical theory of completely monotonic, absolutely monotonic, and related families of functions is much broader and deeper than what we discuss or use in this paper\cite{2014_koumandos_completely_monotonic}.\\
 
-This is particularly relevant from the point of view of attempting semi-parametric fitting of absolutely monotonic functions: if a function can be expressed as a sum of exponentials, can we select the most significant exponents in this sum to estimate the function? There is one important initial problem with this approach: it only applies to functions that are absolutely monotonic in all of $(-\infty,0]$. Many absolutely monotonic functions in $[0,1]$ cannot be extended analytically to $(-\infty,0]$, and therefore do not admit an exponential sum representation. A simple and important example of this is monomials $f(x) = x^n$. All of these are absolutely monotonic (and, in fact, analytic) in $[0,1]$, but cannot be extended to an absolutely monotonic function in $(-\infty,0]$, and cannot be represented as sums of exponentials.\\
+\subsection{Logarithmic convexity}
 
-However, this limitation can be lifted with the adequate problem transformation. Consider the diffeomorphism $x = e^y$ that identifies functions $f(x) \in \cinfty((0,1])$ with functions $g(y) \in \cinfty((-\infty,0])$. This mapping represents a meaningful connection between absolutely monotonic functions in both of these domains. First, we note that absolute monotonicity of $f$ is strictly stronger than absolute monotonicity of $g$.
+Another important family of shape-constrained functions are {\emph{logarithmically convex}} functions, which are functions whose logarithm is convex. Logarithmically convex functions must be convex, and they also appear in a multitude of applications. Exponentials of the form $e^{tx}$ are one of the simplest subfamilies of logarithmically convex functions. Moreover, logarithmically convex functions (like increasing, convex, and absolutely monotonic functions) form a cone and are therefore closed under sum/mixture. It follows from this and Bernstein's theorem that an absolutely monotonic function in $(-\infty,0]$ must be logarithmically convex.
+
+\begin{lemma}
+Let $f \in \cinfty((-\infty,0])$ be absolutely monotonic.
+Then, $f$ must be logarithmically convex.
+\end{lemma}
+
+\begin{proof}
+By Bernstein's theorem, $f(x) = \int_0^{\infty} e^{tx} d\mu(t)$ for some measure $\mu$, but each $e^{tx}$ is logarithmically convex, and a mixture of logarithmically convex functions must be logarithmically convex \cite{2004_boyd_convex_optimization}. 
+\end{proof}
+
+That is, in the half-line $(\infty,0]$, absolute monotonicity is strictly stronger than logarithmic convexity. This, however, does not hold in bounded intervals such as $[0,1]$. Both absolutely monotonic and logarithmically convex families become significantly less restrictive in bounded intervals, in different ways. For example, the following can be shown.
+
+\begin{lemma}
+Let $f \in \cinfty([0,1])$ be strictly convex (in the sense that $f^{\prime\prime}(x) > 0$ for all $x \in [0,1]$).
+Then, there is a constant $C$ such that $f + C$ is logarithmically convex in $[0,1]$.
+\end{lemma}
+
+\begin{proof}
+The second derivative of the logarithm of $f$ is $(log f)^{\prime\prime} = \frac{f f^{\prime\prime} - (f^{\prime})^2}{f^2}$. In order for $(log f)^{\prime \prime} > 0$, with $f^{\prime \prime} > 0$, it is necessary and sufficient that the numerator of this fraction is greater than $0$. That is:
+\begin{equation}
+f f^{\prime\prime} > (f^{\prime})^2
+\end{equation}
+
+All derivatives of $f+C$ are equal to those of $f$, and therefore for the function $f+C$ to be logarithmically convex, it is necessary and sufficient that
+\begin{equation}
+(f + C) f^{\prime\prime} > (f^{\prime})^2
+\end{equation}
+
+but then we can solve for $C$:
+
+\begin{equation}
+\label{constant_forces_logconvex}
+C > \frac{(f^{\prime}(x))^2}{f^{\prime\prime}(x)} - f(x)
+\end{equation}
+
+for all $x \in [0,1]$. But since $[0,1]$ is a bounded interval, then there must be a supremum to the right hand side of equation \ref{constant_forces_logconvex}. And thus, we may choose any constant $C$ greater than the supremum, to ensure that $f + C$ is logarithmically convex.
+\end{proof}
+
+The significance of this is that logarithmic convexity in bounded intervals is less of a shape constraint and more of a vertical requirement on top of traditional convexity, and yet, exponential sums continue to be canonical representatives of both logarithmically convex and absolutely monotonic families.\\
+
+\subsection{Absolutely monotonic functions in bounded intervals}
+
+Many absolutely monotonic functions in $[0,1]$ cannot be extended analytically to $(-\infty,0]$, and therefore do not admit an exponential sum representation. A simple and important example of this is monomials $f(x) = x^n$. All of these are absolutely monotonic (and, in fact, analytic) in $[0,1]$, but cannot be extended to an absolutely monotonic function in $(-\infty,0]$, and cannot be represented as sums of exponentials (they are also not logarithmically convex in $[0,1]$).\\
+
+However, there is an important connection between monomial representations in $(0,1]$ and exponential representations in $(-\infty,0]$. Consider the diffeomorphism $x = e^y$ that identifies functions $f(x) \in \cinfty((0,1])$ with functions $g(y) \in \cinfty((-\infty,0])$. First, we note that absolute monotonicity of $f$ is strictly stronger than absolute monotonicity of $g$.
 
 \begin{lemma}
 Let $f(x) \in \cinfty((0,1])$ be an absolutely monotonic function and consider $g(y) = f(e^y) \in \cinfty((-\infty,0])$.\\
@@ -140,14 +167,14 @@ Let $f(x) \in \cinfty((0,1])$ be an absolutely monotonic function and consider $
 Then:
 \begin{enumerate}
 \item $g$ is absolutely monotonic.
-\item The Bernstein representation $g(y) = \int_0^{\infty} e^{ty}d\mu(t)$, must be such that $\mu$ is only non-zero on integer $t$, and thus
+\item The Bernstein representation $g(y) = \int_0^{\infty} e^{ty}d\mu(t)$, must be such that $\mu$ is supported only on integer $t$, that is, $\mu = \sum_{t=1}^{\infty} a_t \delta_n$, and thus
 \begin{equation}
 \begin{array}{l}
 g(y) = \sum_{t=0}^{\infty} a_t e^{ty}\\
 f(x) = \sum_{t=0}^{\infty} a_t x^t\\
 \end{array}
 \end{equation}
-\noindent with $a_t > 0$.
+\noindent with $a_t \geq 0$.
 \end{enumerate}
 \end{lemma}
 
@@ -171,10 +198,17 @@ From this, we can apply Bernstein's theorem to present $g(y) = \int_0^{\infty} e
 
 \noindent which we know to be positive for all $n$. For integer $t$, these subsequent multiplications are all positive until a $0$ term appears (after $t$ derivations), cancelling out the term in all subsequent derivatives. This is what we expect with integer degree polynomials.
 
-For non-integer $t$, the term $t \cdot (t−1) \cdot ... \cdot (t−n+1)$ changes sign as $n$ increases and grows factorially in magnitude. If $\mu$ assigns positive mass to any non-integer $t$, then for sufficiently large $n$, the integral contains contributions of alternating sign and unbounded magnitude that cannot be canceled by a fixed non-negative measure. This contradicts the requirement that all derivatives remain non-negative. Therefore, $\mu(t) = 0$ for all non-integer $t$.
+For non-integer $t$, the term $t \cdot (t−1) \cdot ... \cdot (t−n+1)$ changes sign as $n$ increases and grows factorially in magnitude. If $\mu$ assigns positive density to any non-integer $t$, then for sufficiently large $n$, the integral contains contributions of alternating sign and unbounded magnitude that cannot be canceled by a fixed non-negative measure. This contradicts the requirement that all derivatives remain non-negative. Therefore, $\mu = \sum_{t=1}^{\infty} a_t \delta_n$.\\
+
+An alternative, perhaps more formal proof can be provided by relying on the fact that absolutely monotonic functions must be analytic. From this, we know that $f(x) = \sum_{t=0}^{\infty} a_t x^t$. We can pull this back to the exponential representation and match it with Bernstein's representation.
+
+\begin{equation}
+g(y) = \int_0^{\infty} e^{ty}d\mu(t) = \sum_{t=0}^{\infty} a_t e^{ty}
+\end{equation}
+\noindent and use uniqueness of Laplace transforms to show that it must be $\mu = \sum_{t=1}^{\infty} a_t \delta_n$.
 \end{proof}
 
-This result works in both directions, though, and we can show that integer mixture terms is exactly the condition required to map absolutely monotonic functions in $(-\infty,0]$ to absolutely monotonic functions in $(0,1]$.
+This result works in both directions, though, and we can show that discrete integer sums is exactly the condition required to map absolutely monotonic functions in $(-\infty,0]$ to absolutely monotonic functions in $(0,1]$.
 
 \begin{lemma}
 Let $g(y) \in \cinfty((-\infty,0])$ be an absolutely monotonic function that only has integer terms in its Bernstein representation. That is, $g(y) = \sum_{t=0}^{\infty} a_t e^{ty}$.\\
@@ -189,10 +223,16 @@ Simply write $f$ as a discrete sum. $f(x) = g(\log x) = \sum_{t=0}^{\infty} a_t 
 In summary
 
 \begin{theorem}
-There is a one-to-one correspondence between absolutely monotonic functions in $(0,1]$ and absolutely monotonic functions in $(-\infty,0]$ that only have integer terms in their Bernstein representation, given by the change of variables $x = e^y$.
+There is a one-to-one correspondence between absolutely monotonic functions in $(0,1]$ and their Taylor series around $0$, $f(x) = \sum_{t=0}^{\infty} a_t x^t$; and absolutely monotonic functions in $(-\infty,0]$ with discrete Bernstein measures supported only on the integers, $g(y) = \sum_{t=0}^{\infty} a_t e^{ty}$. This correspondence is given by the change of variables $x = e^y$.
 \end{theorem}
 
-What this means for our problem is that fitting absolutely monotonic functions in $(0,1]$ corresponds exactly to the problem of fitting exponential sums in $(-\infty,0]$, constrained to integer exponents. In the remainder of this section we discuss various methods used for fitting exponential sums, some of which can be constrained to integer exponents.\\
+For our problem, this means that fitting absolutely monotonic functions in $(0,1]$ by fitting sums of monomials can be translated to and from fitting exponential sums in $(-\infty,0]$, constrained to integer exponents.\\
+
+\section{Potential approaches}
+\label{approaches}
+
+\subsection{Positive sums of positive exponentials}
+\label{exponential_sums}
 
 Prony's method relies on sampling at specific intervals to exploit the structure of an exponential sum\cite{2002_holmstr_parameter_estimation_fitting_exponentials, 2021_keller_prony_methods,2020_chunaev_data_fitting_exponential_sums}. This is an effective method for calculating transforms of known functions that can be sampled at prescribed intervals, but is not suitable for fitting a function to random data that does not adjust to this structure and contains noise.\\
 
