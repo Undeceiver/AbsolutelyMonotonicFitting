@@ -6,6 +6,7 @@
 \usepackage{array}
 \usepackage[Tol]{colorblind}
 \usepackage{emoji}
+%\usepackage{endfloat}
 \usepackage{fontspec}
 \usepackage{mathtools}
 \usepackage{hyperref}
@@ -24,13 +25,17 @@
 \newcommand{\goodresult}[1] {\bf{\textcolor{T-Q-V3}{\underline{#1}}}}
 
 \title{Fitting absolutely monotonic real functions in bounded intervals}
-\author{Juan Casanova}
+\author{Juan Casanova\thanks{j.casanova@hw.ac.uk}}
 
 \begin{document}
 
 \maketitle
 
-We discuss the problem of fitting absolutely monotonic functions to noisy random samples in bounded intervals with both symmetric and asymmetric noise and target loss. This specific shape-constrained estimation problem presents a unique set of constraints that challenge the capabilities of most existing approaches. We explore the applicability and limitations of various kinds of shape-constrained estimation, including exponential sum fitting, constrained Bernstein polynomials, constrained splines, and variations of traditional Vandermonde estimation. A novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF) is also introduced. This method finds monomial terms to iteratively approximate the sampled data from below (lowballing), guaranteeing absolute monotonicity by construction, demonstrating robustness to a variety of function shapes, and exploiting underestimation bias for algorithmic structure. However, it lacks general optimality and occasionally struggles to align with the various regimes of slow and fast growth. A few of the most promising methods were implemented and compared on generated samples from a wide variety of absolutely monotonic and convex functions. While convex splines displayed the best results in cases where low degree polynomials were sufficient, GLAMPF was the most robust approach with the strongest guarantees and produced acceptable results in every test case.
+We discuss the problem of fitting absolutely monotonic functions to noisy random samples in bounded intervals with both symmetric and asymmetric noise and target loss. This specific shape-constrained estimation problem presents a unique set of constraints that challenge the capabilities of most existing approaches. We explore the applicability and limitations of various kinds of shape-constrained estimation, including exponential sum fitting, constrained Bernstein polynomials, constrained splines, and variations of traditional Vandermonde estimation. A novel approach, Greedy Lowballing Absolutely Monotonic Polynomial Fitting (GLAMPF) is also introduced. This method finds monomial terms to iteratively approximate the sampled data from below (lowballing), guaranteeing absolute monotonicity by construction, demonstrating robustness to a variety of function shapes, and exploiting underestimation bias for algorithmic structure. However, it lacks general optimality and occasionally struggles to align with the various regimes of slow and fast growth. A few of the most promising methods were implemented and compared on generated samples from a wide variety of absolutely monotonic and convex functions. While convex splines displayed the best results in cases where low degree polynomials were sufficient, GLAMPF was the most robust approach with the strongest guarantees and produced acceptable results in every test case.\\
+
+{\emph{Word count}}: 5482\\
+
+{\emph{Keywords}}: Absolutely monotonic functions, function fitting, shape-constrained estimation, simulation study.
 
 \pagebreak
 \tableofcontents
@@ -340,6 +345,8 @@ We implemented this method and consider it the one to have displayed the most ro
 
 The following table qualitatively summarizes our discussion on the considered approaches and explain our choices.
 
+\begin{table}
+\caption{Summary of potential approaches to fitting absolutely monotonic functions and their properties}
 \begin{center}
 \makebox[0.1cm]
 {
@@ -368,6 +375,7 @@ Greedy lowballing monomial sums \S \ref{greedy_lowballing}&\emoji{blue-circle}Hi
 }
 }
 \end{center}
+\end{table}
 
 GLAMPF has good representation of the target function family and absolute monotonicity guarantees. The only other methods with good qualities in these columns are Prony methods and precisely sampled Bernstein polynomials, which are completely infeasible due to fixed sampling, nonparametric nature, and no space for an asymmetric loss function; as well as non-linear least squares exponential sums, which have issues with noise sensitivity and asymmetric loss functions. In exchange, our method does not guarantee optimality, is sensitive to hyperparameters, and is computationally inefficient.
 
@@ -634,6 +642,42 @@ The significant differences in results of the various methods linked to the grow
 
 The issues with the approaches described here can be summarized in two families: unsuitable constraints and assumptions for the specific underlying function, and non-optimal methods that do not produce the best results possible. This contrast suggests that there may be a trade-off between expressivity for high-growth behavior and stability / optimality under constraints. The combination of both or the dynamic adjustment of constraints and assumptions depending on results could potentially find a better balance in more diverse cases.\\
 
+\section*{Acknowledgements}
+
+The author would like to thank Jesús García Azorero for valuable email correspondence and identifying some key questions and topics that meaningfully improved the quality of this work.
+
+\section*{Declaration of interests}
+
+The author reports there are no competing interests to declare.
+
+\section*{Funding}
+
+The author received no financial support for the research, authorship, and/or publication of this article. Open access publication was supported through an existing agreement between the author's institution (Heriot-Watt University) and the publisher.
+
+\section*{Declaration of generative AI use}
+
+Generative AI\footnote{in particular, OpenAI ChatGPT (models available through the ChatGPT free public service at the time of use)} was used by the author in making this article only for the following purposes:
+
+\begin{itemize}
+\item Support for finding relevant literature.
+\item Discussions of thoughts and ideas informally.
+\end{itemize}
+
+In particular, the author declares that:
+
+\begin{itemize}
+\item A very small proportion of computer code used included AI contributions, and these contributions were explicitly checked, understood, and edited manually by the author. These consisted primarily in standard methods or functions that the author saved time by asking the AI to create a template that was later modified.
+\item All mathematical arguments and proofs were thoroughly and manually developed, written, and checked by the author.
+\item No results, charts, or images were generated or edited by AI.
+\item No text included in this article was generated or edited by AI.
+\item AI was not used to summarize relevant literature or to replace the author interacting directly with it.
+\end{itemize}
+
+The originality and accuracy of the content of this article has been confirmed by the author. The declared use aligns with the terms and services of the generative AI services used. The author takes full responsibility for the integrity of the whole content, including accuracy of references.
+
 \dobibliography
+
+\listoffigures
+\listoftables
 
 \end{document}
